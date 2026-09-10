@@ -1,26 +1,92 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #181820;
+  --surface: #3c3d41;
+  --accent: #ed3b6b;
+  --text: #ffffff;
+  --text-muted: #a8a8b0;
+  --background: var(--bg);
+  --foreground: var(--text);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-nike-bg: #181820;
+  --color-nike-surface: #3c3d41;
+  --color-nike-accent: #ed3b6b;
+  --color-nike-muted: #a8a8b0;
+  --font-sans: var(--font-manrope);
+  --font-display: var(--font-syne);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-manrope), sans-serif;
+}
+
+.shoe-knockout {
+  mix-blend-mode: lighten;
+}
+
+@keyframes float-shoe {
+  0%,
+  100% {
+    transform: rotate(-43deg) translateY(0);
+  }
+  50% {
+    transform: rotate(-43deg) translateY(-10px);
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(48px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes swirl {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(12px, -8px) scale(1.05);
+  }
+}
+
+.animate-float-shoe {
+  animation: float-shoe 5s ease-in-out infinite;
+}
+
+.animate-fade-up {
+  animation: fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-swirl {
+  animation: swirl 10s ease-in-out infinite;
+}
+
+.shoe-slide {
+  transition:
+    transform 1.55s cubic-bezier(0.45, 0.02, 0.2, 1),
+    opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform, opacity;
 }
