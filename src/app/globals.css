@@ -28,7 +28,14 @@
 html,
 body {
   height: 100%;
-  overflow: hidden;
+  overflow-x: hidden;
+}
+
+@media (min-width: 1024px) {
+  html,
+  body {
+    overflow: hidden;
+  }
 }
 
 body {
@@ -98,10 +105,12 @@ body {
 
 .shoe-slide-exit {
   z-index: 1;
-  transform: translate3d(0, -115vh, 0);
+  transform: translate3d(0, -110%, 0);
+  pointer-events: none;
 }
 
 .shoe-slide-enter {
   z-index: 3;
-  transform: translate3d(0, 115vh, 0);
+  transform: translate3d(0, 110%, 0);
+  pointer-events: none;
 }

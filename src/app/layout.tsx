@@ -24,7 +24,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="vi"
       className={`${manrope.variable} ${syne.variable} h-full antialiased`}
     >
-      <body className="h-full overflow-hidden">{children}</body>
+      <body className="h-full overflow-x-hidden overflow-y-auto lg:overflow-hidden">
+        {children}
+      </body>
     </html>
   );
 }

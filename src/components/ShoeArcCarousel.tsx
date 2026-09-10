@@ -14,7 +14,6 @@ const VIEW_W = 220;
 const VIEW_H = 460;
 const CX = 268;
 const CY = 230;
-/** Thumbnail nằm cách thanh cung hơn để khỏi dính knob */
 const R_THUMB = 215;
 const R_TRACK = 152;
 const MAX_ANGLE = 62;
@@ -33,6 +32,39 @@ const pointOnArc = (angleDeg: number, radius: number) => ({
 });
 
 const pct = (value: number, total: number) => `${round((value / total) * 100)}%`;
+
+function MobileCarousel({ shoes, activeIndex, onChange }: Props) {
+  return (
+    <div className="flex w-full max-w-full items-center gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {shoes.map((shoe, index) => {
+        const isActive = index === activeIndex;
+        return (
+          <button
+            key={shoe.id}
+            type="button"
+            aria-label={`Chọn ${shoe.name} ${shoe.nameAccent}`}
+            aria-pressed={isActive}
+            onClick={() => onChange(index)}
+            className={`relative h-14 w-14 shrink-0 cursor-pointer overflow-visible rounded-2xl transition-all duration-300 sm:h-16 sm:w-16 ${
+              isActive ? "ring-2 ring-white shadow-[0_0_20px_rgba(237,59,107,0.45)]" : "opacity-85"
+            }`}
+            style={{ backgroundColor: isActive ? shoe.accent : shoe.thumbBg }}
+          >
+            <span className="absolute left-1/2 top-1/2 z-10 block h-[125%] w-[140%] -translate-x-1/2 -translate-y-1/2">
+              <Image
+                src={shoe.hero}
+                alt=""
+                fill
+                sizes="80px"
+                className="object-contain mix-blend-lighten"
+              />
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function ShoeArcCarousel({
   shoes,
@@ -87,98 +119,110 @@ export default function ShoeArcCarousel({
   }, [activeIndex, indexFromPointer, onChange]);
 
   return (
-    <div
-      ref={wrapperRef}
-      className="relative h-[460px] w-[220px] shrink-0 select-none overflow-visible"
-    >
-      {/* Thanh cung dạng rail / 1 thanh liền */}
-      <svg
-        viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
-        className="pointer-events-none absolute inset-0 h-full w-full"
-        fill="none"
+    <>
+      {/* Mobile / tablet: hàng ngang */}
+      <div className="w-full lg:hidden">
+        <MobileCarousel
+          shoes={shoes}
+          activeIndex={activeIndex}
+          onChange={onChange}
+        />
+      </div>
+
+      {/* Desktop: cung tròn */}
+      <div
+        ref={wrapperRef}
+        className="relative hidden h-[460px] w-[220px] shrink-0 select-none overflow-visible lg:block"
       >
-        <defs>
-          <linearGradient id="arc-rail" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#9a9aa3" />
-            <stop offset="45%" stopColor="#c8c8d0" />
-            <stop offset="100%" stopColor="#6e6e78" />
-          </linearGradient>
-        </defs>
-        <path
-          d={`M ${trackStart.x} ${trackStart.y} A ${R_TRACK} ${R_TRACK} 0 0 0 ${trackEnd.x} ${trackEnd.y}`}
-          stroke="url(#arc-rail)"
-          strokeWidth="11"
-          strokeLinecap="round"
+        <svg
+          viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
+          className="pointer-events-none absolute inset-0 h-full w-full"
+          fill="none"
+        >
+          <defs>
+            <linearGradient id="arc-rail" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#9a9aa3" />
+              <stop offset="45%" stopColor="#c8c8d0" />
+              <stop offset="100%" stopColor="#6e6e78" />
+            </linearGradient>
+          </defs>
+          <path
+            d={`M ${trackStart.x} ${trackStart.y} A ${R_TRACK} ${R_TRACK} 0 0 0 ${trackEnd.x} ${trackEnd.y}`}
+            stroke="url(#arc-rail)"
+            strokeWidth="11"
+            strokeLinecap="round"
+          />
+          <path
+            d={`M ${trackStart.x} ${trackStart.y} A ${R_TRACK} ${R_TRACK} 0 0 0 ${trackEnd.x} ${trackEnd.y}`}
+            stroke="#5a5a64"
+            strokeWidth="3"
+            strokeLinecap="round"
+            opacity="0.45"
+          />
+        </svg>
+
+        <button
+          type="button"
+          aria-label="Kéo để đổi mẫu giày"
+          onPointerDown={(event) => {
+            event.preventDefault();
+            draggingRef.current = true;
+          }}
+          className="absolute z-30 h-[16px] w-[16px] cursor-grab rounded-full bg-white shadow-[0_0_0_3px_rgba(90,90,100,0.35),0_0_12px_rgba(255,255,255,0.55)] transition-all duration-300 active:cursor-grabbing"
+          style={{
+            left: pct(knob.x, VIEW_W),
+            top: pct(knob.y, VIEW_H),
+            transform: "translate(-50%, -50%)",
+          }}
         />
-        <path
-          d={`M ${trackStart.x} ${trackStart.y} A ${R_TRACK} ${R_TRACK} 0 0 0 ${trackEnd.x} ${trackEnd.y}`}
-          stroke="#5a5a64"
-          strokeWidth="3"
-          strokeLinecap="round"
-          opacity="0.45"
-        />
-      </svg>
 
-      {/* Knob nằm giữa thanh (cùng bán kính track) */}
-      <button
-        type="button"
-        aria-label="Kéo để đổi mẫu giày"
-        onPointerDown={(event) => {
-          event.preventDefault();
-          draggingRef.current = true;
-        }}
-        className="absolute z-30 h-[16px] w-[16px] cursor-grab rounded-full bg-white shadow-[0_0_0_3px_rgba(90,90,100,0.35),0_0_12px_rgba(255,255,255,0.55)] transition-all duration-300 active:cursor-grabbing"
-        style={{
-          left: pct(knob.x, VIEW_W),
-          top: pct(knob.y, VIEW_H),
-          transform: "translate(-50%, -50%)",
-        }}
-      />
+        {shoes.map((shoe, index) => {
+          const angle = angleOf(index);
+          const { x, y } = pointOnArc(angle, R_THUMB);
+          const isActive = index === activeIndex;
+          const cardSize = isActive ? 64 : 56;
+          const tilt = round(angle * 0.28, 2);
 
-      {shoes.map((shoe, index) => {
-        const angle = angleOf(index);
-        const { x, y } = pointOnArc(angle, R_THUMB);
-        const isActive = index === activeIndex;
-        const cardSize = isActive ? 64 : 56;
-        const tilt = round(angle * 0.28, 2);
-
-        return (
-          <button
-            key={shoe.id}
-            type="button"
-            aria-label={`Chọn ${shoe.name} ${shoe.nameAccent}`}
-            aria-pressed={isActive}
-            onClick={() => onChange(index)}
-            className="absolute z-10 cursor-pointer overflow-visible transition-all duration-300"
-            style={{
-              left: pct(x, VIEW_W),
-              top: pct(y, VIEW_H),
-              width: cardSize,
-              height: cardSize,
-              transform: `translate(-50%, -50%) rotate(${tilt}deg)`,
-            }}
-          >
-            {/* Nền div — không clip ảnh */}
-            <span
-              className={`absolute inset-0 rounded-[16px] transition-all duration-300 ${
-                isActive ? "shadow-[0_0_26px_rgba(237,59,107,0.5)] ring-2 ring-white" : ""
-              }`}
-              style={{ backgroundColor: isActive ? shoe.accent : shoe.thumbBg }}
-            />
-
-            {/* Ảnh đè lên div, lộ ra ngoài */}
-            <span className="absolute left-1/2 top-1/2 z-10 block h-[120%] w-[140%] -translate-x-1/2 -translate-y-1/2">
-              <Image
-                src={shoe.hero}
-                alt=""
-                fill
-                sizes="100px"
-                className="object-contain mix-blend-lighten drop-shadow-[0_6px_12px_rgba(0,0,0,0.45)]"
+          return (
+            <button
+              key={shoe.id}
+              type="button"
+              aria-label={`Chọn ${shoe.name} ${shoe.nameAccent}`}
+              aria-pressed={isActive}
+              onClick={() => onChange(index)}
+              className="absolute z-10 cursor-pointer overflow-visible transition-all duration-300"
+              style={{
+                left: pct(x, VIEW_W),
+                top: pct(y, VIEW_H),
+                width: cardSize,
+                height: cardSize,
+                transform: `translate(-50%, -50%) rotate(${tilt}deg)`,
+              }}
+            >
+              <span
+                className={`absolute inset-0 rounded-[16px] transition-all duration-300 ${
+                  isActive
+                    ? "shadow-[0_0_26px_rgba(237,59,107,0.5)] ring-2 ring-white"
+                    : ""
+                }`}
+                style={{
+                  backgroundColor: isActive ? shoe.accent : shoe.thumbBg,
+                }}
               />
-            </span>
-          </button>
-        );
-      })}
-    </div>
+
+              <span className="absolute left-1/2 top-1/2 z-10 block h-[120%] w-[140%] -translate-x-1/2 -translate-y-1/2">
+                <Image
+                  src={shoe.hero}
+                  alt=""
+                  fill
+                  sizes="100px"
+                  className="object-contain mix-blend-lighten drop-shadow-[0_6px_12px_rgba(0,0,0,0.45)]"
+                />
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </>
   );
 }

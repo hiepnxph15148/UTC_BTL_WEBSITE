@@ -39,54 +39,56 @@ export const slideClass = (index: number, activeIndex: number) => {
 
 export default function HeroStage({ shoes, activeIndex }: Props) {
   return (
-    <div className="pointer-events-none relative h-full min-h-[440px] w-full overflow-visible">
-      <span className="absolute left-[48%] top-[46%] z-0 -translate-x-1/2 -translate-y-1/2 select-none font-display text-[140px] font-extrabold tracking-tight text-white/[0.07] xl:text-[200px]">
+    <div className="pointer-events-none relative h-full min-h-[220px] w-full overflow-hidden sm:min-h-[280px] lg:min-h-[440px]">
+      <span className="absolute left-[50%] top-[48%] z-0 -translate-x-1/2 -translate-y-1/2 select-none font-display text-[72px] font-extrabold tracking-tight text-white/[0.07] sm:text-[100px] lg:left-[48%] lg:top-[46%] lg:text-[140px] xl:text-[200px]">
         NIKE
       </span>
 
-      {strips.map((strip, stripIndex) => (
-        <div
-          key={stripIndex}
-          className="absolute z-20"
-          style={{ left: strip.left, top: strip.top }}
-        >
-          {/* Thanh parallelogram giữ nguyên style */}
+      <div className="pointer-events-none absolute inset-0 hidden sm:block">
+        {strips.map((strip, stripIndex) => (
           <div
-            className="absolute left-1/2 top-1/2 shadow-[0_12px_28px_rgba(0,0,0,0.4)]"
-            style={{
-              width: BAR_W,
-              height: BAR_H,
-              background: strip.gradient,
-              transform: `translate(-50%, -50%) skewX(${BAR_SKEW}deg)`,
-            }}
-          />
-
-          {/* Ảnh đè giữa thanh — dịch vào trong div 10px */}
-          <div
-            className="absolute left-1/2 top-1/2 z-10"
-            style={{
-              width: 180,
-              height: 130,
-              transform: "translate(calc(-50% - 10px), -50%)",
-            }}
+            key={stripIndex}
+            className="absolute z-20 scale-[0.55] sm:scale-[0.7] lg:scale-100"
+            style={{ left: strip.left, top: strip.top }}
           >
-            {shoes.map((shoe, index) => (
-              <div key={shoe.id} className={slideClass(index, activeIndex)}>
-                <Image
-                  src={shoe.angles[stripIndex]}
-                  alt=""
-                  fill
-                  sizes="180px"
-                  className="object-contain object-center mix-blend-lighten drop-shadow-[0_8px_20px_rgba(0,0,0,0.5)]"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
+            {/* Thanh nền — luôn hiện */}
+            <div
+              className="absolute left-1/2 top-1/2 shadow-[0_12px_28px_rgba(0,0,0,0.4)]"
+              style={{
+                width: BAR_W,
+                height: BAR_H,
+                background: strip.gradient,
+                transform: `translate(-50%, -50%) skewX(${BAR_SKEW}deg)`,
+              }}
+            />
 
-      {/* Giày chính: nghiêng sâu hơn + lệch trái cho cân */}
-      <div className="absolute left-[32%] top-[40%] z-30 h-[min(138%,864px)] w-[min(150%,1200px)] -translate-x-1/2 -translate-y-1/2">
+            {/* Clip slide — ảnh active vẫn đè lên thanh; slide cũ/mới không tràn PC */}
+            <div
+              className="absolute left-1/2 top-1/2 z-10 overflow-hidden"
+              style={{
+                width: 200,
+                height: 150,
+                transform: "translate(calc(-50% - 10px), -50%)",
+              }}
+            >
+              {shoes.map((shoe, index) => (
+                <div key={shoe.id} className={slideClass(index, activeIndex)}>
+                  <Image
+                    src={shoe.angles[stripIndex]}
+                    alt=""
+                    fill
+                    sizes="200px"
+                    className="object-contain object-center mix-blend-lighten drop-shadow-[0_8px_20px_rgba(0,0,0,0.5)]"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Giày chính — overflow-hidden để slide không vỡ layout PC */}
+      <div className="absolute left-1/2 top-[46%] z-30 h-[min(95%,320px)] w-[min(110%,360px)] -translate-x-1/2 -translate-y-1/2 overflow-hidden sm:left-[42%] sm:h-[min(110%,420px)] sm:w-[min(120%,520px)] lg:left-[36%] lg:top-[42%] lg:h-[min(120%,720px)] lg:w-[min(130%,980px)]">
         {shoes.map((shoe, index) => (
           <div key={shoe.id} className={slideClass(index, activeIndex)}>
             <div className="animate-float-shoe relative h-full w-full">
@@ -94,7 +96,7 @@ export default function HeroStage({ shoes, activeIndex }: Props) {
                 src={shoe.hero}
                 alt={`${shoe.name} ${shoe.nameAccent}`}
                 fill
-                sizes="(max-width: 1024px) 95vw, 1200px"
+                sizes="(max-width: 640px) 90vw, (max-width: 1024px) 70vw, 980px"
                 priority={index === 0}
                 className="object-contain mix-blend-lighten drop-shadow-[0_50px_70px_rgba(0,0,0,0.65)]"
               />
