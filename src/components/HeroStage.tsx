@@ -31,10 +31,10 @@ const BAR_SKEW = -40;
 
 export const slideClass = (index: number, activeIndex: number) => {
   const base = "shoe-slide absolute inset-0";
-  if (index === activeIndex) return `${base} translate-y-0 opacity-100`;
+  if (index === activeIndex) return `${base} shoe-slide-active`;
   return index < activeIndex
-    ? `${base} -translate-y-[110vh] opacity-0`
-    : `${base} translate-y-[110vh] opacity-0`;
+    ? `${base} shoe-slide-exit`
+    : `${base} shoe-slide-enter`;
 };
 
 export default function HeroStage({ shoes, activeIndex }: Props) {

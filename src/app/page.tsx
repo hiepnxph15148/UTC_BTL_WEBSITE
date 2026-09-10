@@ -40,7 +40,7 @@ export default function Home() {
               <ProductPanel shoes={shoes} activeIndex={activeIndex} />
             </div>
 
-            <div className="relative z-10 min-h-0 self-stretch">
+            <div className="relative z-10 min-h-0 self-stretch overflow-visible">
               <HeroStage shoes={shoes} activeIndex={activeIndex} />
             </div>
 

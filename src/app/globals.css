@@ -85,8 +85,23 @@ body {
 }
 
 .shoe-slide {
-  transition:
-    transform 1.55s cubic-bezier(0.45, 0.02, 0.2, 1),
-    opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform, opacity;
+  transition: transform 1.65s cubic-bezier(0.33, 0.0, 0.2, 1);
+  will-change: transform;
+  backface-visibility: hidden;
+  opacity: 1;
+}
+
+.shoe-slide-active {
+  z-index: 2;
+  transform: translate3d(0, 0, 0);
+}
+
+.shoe-slide-exit {
+  z-index: 1;
+  transform: translate3d(0, -115vh, 0);
+}
+
+.shoe-slide-enter {
+  z-index: 3;
+  transform: translate3d(0, 115vh, 0);
 }

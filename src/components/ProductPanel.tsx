@@ -21,7 +21,7 @@ export default function ProductPanel({ shoes, activeIndex }: Props) {
 
   return (
     <div className="flex w-[300px] max-w-full flex-col gap-7">
-      <div className="relative h-[132px]">
+      <div className="relative h-[132px] overflow-visible">
         {shoes.map((item, index) => (
           <div key={item.id} className={slideClass(index, activeIndex)}>
             <h1 className="font-display text-[36px] font-extrabold leading-[1.08] tracking-tight">
