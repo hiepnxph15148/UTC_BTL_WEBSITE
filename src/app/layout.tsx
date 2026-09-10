@@ -17,6 +17,10 @@ const syne = Syne({
 export const metadata: Metadata = {
   title: "Nike Store | UTC ASM",
   description: "Nike shoes store với 3D carousel tương tác",
+  icons: {
+    icon: [{ url: "/logo/nike-black.png", type: "image/png" }],
+    apple: [{ url: "/logo/nike-black.png", type: "image/png" }],
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

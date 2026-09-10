@@ -1,0 +1,18 @@
+.admin-shell {
+  font-family: var(--font-manrope), sans-serif !important;
+}
+
+.admin-shell :where(h1, h2, h3, h4, h5, h6, p, span, a, button, input, select, label, td, th) {
+  font-family: inherit !important;
+}
+
+.admin-card {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  background: linear-gradient(
+    160deg,
+    rgba(40, 40, 52, 0.95),
+    rgba(22, 22, 30, 0.98)
+  );
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+}

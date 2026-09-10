@@ -46,7 +46,7 @@ export default function CartPage() {
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <h2 className="font-display text-lg font-bold">
+                  <h2 className="text-lg font-bold">
                     {item.name}{" "}
                     <span style={{ color: item.accent }}>{item.nameAccent}</span>
                   </h2>
@@ -95,7 +95,7 @@ export default function CartPage() {
           </div>
 
           <aside className="page-card h-fit rounded-2xl p-6">
-            <h3 className="font-display text-xl font-bold">Tóm tắt</h3>
+            <h3 className="text-xl font-bold">Tóm tắt</h3>
             <div className="mt-4 space-y-2 text-sm text-white/70">
               <div className="flex justify-between">
                 <span>Số lượng</span>
@@ -108,12 +108,12 @@ export default function CartPage() {
                 </span>
               </div>
             </div>
-            <button
-              type="button"
-              className="mt-6 w-full cursor-pointer rounded-xl bg-gradient-to-r from-nike-accent to-[#ff6b95] py-3 text-sm font-bold tracking-wide text-white"
+            <Link
+              href="/checkout"
+              className="mt-6 flex w-full cursor-pointer items-center justify-center rounded-xl bg-gradient-to-r from-nike-accent to-[#ff6b95] py-3 text-sm font-bold tracking-wide text-white"
             >
               Checkout
-            </button>
+            </Link>
             <button
               type="button"
               onClick={clearCart}

@@ -63,7 +63,7 @@ export default function PageShell({
             >
               Nike Store
             </p>
-            <h1 className="font-display text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
+            <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
               {title}
             </h1>
             <div
