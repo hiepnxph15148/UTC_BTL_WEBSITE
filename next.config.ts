@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Ẩn badge "N" góc dưới trong chế độ dev
+  devIndicators: false,
 };
 
 export default nextConfig;

@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #181820;
+  --bg: #121218;
   --surface: #3c3d41;
   --accent: #ed3b6b;
   --text: #ffffff;
@@ -25,20 +25,16 @@
   box-sizing: border-box;
 }
 
-html,
-body {
-  height: 100%;
-  overflow-x: hidden;
-}
-
-@media (min-width: 1024px) {
-  html,
-  body {
-    overflow: hidden;
-  }
+html {
+  min-height: 100%;
+  overflow-x: clip;
+  overflow-y: auto;
 }
 
 body {
+  min-height: 100%;
+  overflow-x: clip;
+  overflow-y: visible;
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-manrope), sans-serif;
@@ -113,4 +109,56 @@ body {
   z-index: 3;
   transform: translate3d(0, 110%, 0);
   pointer-events: none;
+}
+
+@keyframes page-rise {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes drift-glow {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: translate(18px, -14px) scale(1.06);
+    opacity: 1;
+  }
+}
+
+.animate-page-rise {
+  animation: page-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-drift-glow {
+  animation: drift-glow 12s ease-in-out infinite;
+}
+
+.page-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background:
+    linear-gradient(160deg, rgba(40, 40, 52, 0.95), rgba(22, 22, 30, 0.98));
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+  transition:
+    transform 0.35s ease,
+    border-color 0.35s ease,
+    box-shadow 0.35s ease;
+}
+
+.page-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(237, 59, 107, 0.45);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.45),
+    0 0 40px rgba(237, 59, 107, 0.12);
 }

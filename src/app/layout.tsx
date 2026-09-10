@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Manrope, Syne } from "next/font/google";
+import Providers from "@/components/Providers";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -22,10 +23,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="vi"
-      className={`${manrope.variable} ${syne.variable} h-full antialiased`}
+      className={`${manrope.variable} ${syne.variable} antialiased`}
     >
-      <body className="h-full overflow-x-hidden overflow-y-auto lg:overflow-hidden">
-        {children}
+      <body className="min-h-dvh bg-[#121218]">
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

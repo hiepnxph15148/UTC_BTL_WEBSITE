@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { slideClass } from "@/components/HeroStage";
+import { useCart } from "@/context/CartContext";
 import type { ShoeProduct } from "@/data/shoes";
 
 type Props = {
@@ -11,17 +12,29 @@ type Props = {
 
 export default function ProductPanel({ shoes, activeIndex }: Props) {
   const shoe = shoes[activeIndex];
+  const { addItem } = useCart();
   const [color, setColor] = useState(0);
   const [size, setSize] = useState(0);
+  const [added, setAdded] = useState(false);
 
   useEffect(() => {
     setColor(0);
     setSize(0);
+    setAdded(false);
   }, [shoe.id]);
+
+  const onBuy = () => {
+    addItem({
+      shoe,
+      color: shoe.colors[color],
+      size: shoe.sizes[size],
+    });
+    setAdded(true);
+    window.setTimeout(() => setAdded(false), 1600);
+  };
 
   return (
     <div className="flex w-full max-w-full flex-col gap-4 sm:gap-5 lg:w-[300px] lg:gap-7">
-      {/* overflow-hidden: chặn chữ/giá translate 115vh tràn xuống đáy trang */}
       <div className="relative h-[88px] overflow-hidden sm:h-[110px] lg:h-[132px]">
         {shoes.map((item, index) => (
           <div key={item.id} className={slideClass(index, activeIndex)}>
@@ -82,12 +95,15 @@ export default function ProductPanel({ shoes, activeIndex }: Props) {
 
       <button
         type="button"
+        onClick={onBuy}
         className="mt-1 w-full max-w-[168px] cursor-pointer rounded-[10px] py-3 text-sm font-bold tracking-[0.2em] text-white shadow-[0_10px_30px_rgba(237,59,107,0.35)] transition-transform hover:scale-105 active:scale-100 sm:py-3.5"
         style={{
-          background: `linear-gradient(90deg, ${shoe.accent}, #ff6b95)`,
+          background: added
+            ? "linear-gradient(90deg, #16a34a, #4ade80)"
+            : `linear-gradient(90deg, ${shoe.accent}, #ff6b95)`,
         }}
       >
-        BUY
+        {added ? "ADDED" : "BUY"}
       </button>
     </div>
   );
