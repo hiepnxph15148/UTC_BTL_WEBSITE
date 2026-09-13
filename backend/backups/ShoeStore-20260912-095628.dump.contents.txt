@@ -1,0 +1,288 @@
+;
+; Archive created at 2026-09-12 02:56:28 UTC
+;     dbname: ShoeStore
+;     TOC Entries: 277
+;     Compression: gzip
+;     Dump Version: 1.16-0
+;     Format: CUSTOM
+;     Integer: 4 bytes
+;     Offset: 8 bytes
+;     Dumped from database version: 17.11 (Debian 17.11-1.pgdg13+2)
+;     Dumped by pg_dump version: 17.11 (Debian 17.11-1.pgdg13+2)
+;
+;
+; Selected TOC Entries:
+;
+249; 1259 24781 TABLE public AbpAuditLogActions shoestore
+222; 1259 24582 TABLE public AbpAuditLogExcelFiles shoestore
+223; 1259 24587 TABLE public AbpAuditLogs shoestore
+224; 1259 24594 TABLE public AbpBackgroundJobs shoestore
+225; 1259 24604 TABLE public AbpBlobContainers shoestore
+251; 1259 24805 TABLE public AbpBlobs shoestore
+226; 1259 24611 TABLE public AbpClaimTypes shoestore
+250; 1259 24793 TABLE public AbpEntityChanges shoestore
+264; 1259 24971 TABLE public AbpEntityPropertyChanges shoestore
+227; 1259 24618 TABLE public AbpFeatureGroups shoestore
+229; 1259 24632 TABLE public AbpFeatureValues shoestore
+228; 1259 24625 TABLE public AbpFeatures shoestore
+230; 1259 24637 TABLE public AbpLinkUsers shoestore
+252; 1259 24817 TABLE public AbpOrganizationUnitRoles shoestore
+231; 1259 24642 TABLE public AbpOrganizationUnits shoestore
+232; 1259 24655 TABLE public AbpPermissionGrants shoestore
+233; 1259 24660 TABLE public AbpPermissionGroups shoestore
+234; 1259 24667 TABLE public AbpPermissions shoestore
+235; 1259 24674 TABLE public AbpResourcePermissionGrants shoestore
+253; 1259 24832 TABLE public AbpRoleClaims shoestore
+236; 1259 24681 TABLE public AbpRoles shoestore
+237; 1259 24688 TABLE public AbpSecurityLogs shoestore
+238; 1259 24695 TABLE public AbpSessions shoestore
+239; 1259 24702 TABLE public AbpSettingDefinitions shoestore
+240; 1259 24709 TABLE public AbpSettings shoestore
+254; 1259 24844 TABLE public AbpTenantConnectionStrings shoestore
+241; 1259 24716 TABLE public AbpTenants shoestore
+255; 1259 24856 TABLE public AbpUserClaims shoestore
+242; 1259 24724 TABLE public AbpUserDelegations shoestore
+256; 1259 24868 TABLE public AbpUserLogins shoestore
+257; 1259 24878 TABLE public AbpUserOrganizationUnits shoestore
+258; 1259 24893 TABLE public AbpUserPasskeys shoestore
+259; 1259 24905 TABLE public AbpUserPasswordHistories shoestore
+260; 1259 24915 TABLE public AbpUserRoles shoestore
+261; 1259 24930 TABLE public AbpUserTokens shoestore
+243; 1259 24729 TABLE public AbpUsers shoestore
+244; 1259 24744 TABLE public AppAddress shoestore
+269; 1259 25047 TABLE public AppCartLine shoestore
+245; 1259 24751 TABLE public AppCatalogLookup shoestore
+265; 1259 24983 TABLE public AppDiscount shoestore
+271; 1259 25071 TABLE public AppOrderHistory shoestore
+262; 1259 24942 TABLE public AppProduct shoestore
+273; 1259 25100 TABLE public AppReturnRequest shoestore
+268; 1259 25035 TABLE public AppSaleOrder shoestore
+272; 1259 25083 TABLE public AppSaleOrderLine shoestore
+266; 1259 24995 TABLE public AppSku shoestore
+270; 1259 25059 TABLE public AppStockMovement shoestore
+246; 1259 24758 TABLE public AppStoreNotification shoestore
+247; 1259 24765 TABLE public OpenIddictApplications shoestore
+263; 1259 24959 TABLE public OpenIddictAuthorizations shoestore
+248; 1259 24773 TABLE public OpenIddictScopes shoestore
+267; 1259 25018 TABLE public OpenIddictTokens shoestore
+221; 1259 24577 TABLE public __EFMigrationsHistory shoestore
+3894; 0 24781 TABLE DATA public AbpAuditLogActions shoestore
+3867; 0 24582 TABLE DATA public AbpAuditLogExcelFiles shoestore
+3868; 0 24587 TABLE DATA public AbpAuditLogs shoestore
+3869; 0 24594 TABLE DATA public AbpBackgroundJobs shoestore
+3870; 0 24604 TABLE DATA public AbpBlobContainers shoestore
+3896; 0 24805 TABLE DATA public AbpBlobs shoestore
+3871; 0 24611 TABLE DATA public AbpClaimTypes shoestore
+3895; 0 24793 TABLE DATA public AbpEntityChanges shoestore
+3909; 0 24971 TABLE DATA public AbpEntityPropertyChanges shoestore
+3872; 0 24618 TABLE DATA public AbpFeatureGroups shoestore
+3874; 0 24632 TABLE DATA public AbpFeatureValues shoestore
+3873; 0 24625 TABLE DATA public AbpFeatures shoestore
+3875; 0 24637 TABLE DATA public AbpLinkUsers shoestore
+3897; 0 24817 TABLE DATA public AbpOrganizationUnitRoles shoestore
+3876; 0 24642 TABLE DATA public AbpOrganizationUnits shoestore
+3877; 0 24655 TABLE DATA public AbpPermissionGrants shoestore
+3878; 0 24660 TABLE DATA public AbpPermissionGroups shoestore
+3879; 0 24667 TABLE DATA public AbpPermissions shoestore
+3880; 0 24674 TABLE DATA public AbpResourcePermissionGrants shoestore
+3898; 0 24832 TABLE DATA public AbpRoleClaims shoestore
+3881; 0 24681 TABLE DATA public AbpRoles shoestore
+3882; 0 24688 TABLE DATA public AbpSecurityLogs shoestore
+3883; 0 24695 TABLE DATA public AbpSessions shoestore
+3884; 0 24702 TABLE DATA public AbpSettingDefinitions shoestore
+3885; 0 24709 TABLE DATA public AbpSettings shoestore
+3899; 0 24844 TABLE DATA public AbpTenantConnectionStrings shoestore
+3886; 0 24716 TABLE DATA public AbpTenants shoestore
+3900; 0 24856 TABLE DATA public AbpUserClaims shoestore
+3887; 0 24724 TABLE DATA public AbpUserDelegations shoestore
+3901; 0 24868 TABLE DATA public AbpUserLogins shoestore
+3902; 0 24878 TABLE DATA public AbpUserOrganizationUnits shoestore
+3903; 0 24893 TABLE DATA public AbpUserPasskeys shoestore
+3904; 0 24905 TABLE DATA public AbpUserPasswordHistories shoestore
+3905; 0 24915 TABLE DATA public AbpUserRoles shoestore
+3906; 0 24930 TABLE DATA public AbpUserTokens shoestore
+3888; 0 24729 TABLE DATA public AbpUsers shoestore
+3889; 0 24744 TABLE DATA public AppAddress shoestore
+3914; 0 25047 TABLE DATA public AppCartLine shoestore
+3890; 0 24751 TABLE DATA public AppCatalogLookup shoestore
+3910; 0 24983 TABLE DATA public AppDiscount shoestore
+3916; 0 25071 TABLE DATA public AppOrderHistory shoestore
+3907; 0 24942 TABLE DATA public AppProduct shoestore
+3918; 0 25100 TABLE DATA public AppReturnRequest shoestore
+3913; 0 25035 TABLE DATA public AppSaleOrder shoestore
+3917; 0 25083 TABLE DATA public AppSaleOrderLine shoestore
+3911; 0 24995 TABLE DATA public AppSku shoestore
+3915; 0 25059 TABLE DATA public AppStockMovement shoestore
+3891; 0 24758 TABLE DATA public AppStoreNotification shoestore
+3892; 0 24765 TABLE DATA public OpenIddictApplications shoestore
+3908; 0 24959 TABLE DATA public OpenIddictAuthorizations shoestore
+3893; 0 24773 TABLE DATA public OpenIddictScopes shoestore
+3912; 0 25018 TABLE DATA public OpenIddictTokens shoestore
+3866; 0 24577 TABLE DATA public __EFMigrationsHistory shoestore
+3597; 2606 24787 CONSTRAINT public AbpAuditLogActions PK_AbpAuditLogActions shoestore
+3504; 2606 24586 CONSTRAINT public AbpAuditLogExcelFiles PK_AbpAuditLogExcelFiles shoestore
+3508; 2606 24593 CONSTRAINT public AbpAuditLogs PK_AbpAuditLogs shoestore
+3511; 2606 24603 CONSTRAINT public AbpBackgroundJobs PK_AbpBackgroundJobs shoestore
+3514; 2606 24610 CONSTRAINT public AbpBlobContainers PK_AbpBlobContainers shoestore
+3605; 2606 24811 CONSTRAINT public AbpBlobs PK_AbpBlobs shoestore
+3516; 2606 24617 CONSTRAINT public AbpClaimTypes PK_AbpClaimTypes shoestore
+3601; 2606 24799 CONSTRAINT public AbpEntityChanges PK_AbpEntityChanges shoestore
+3643; 2606 24977 CONSTRAINT public AbpEntityPropertyChanges PK_AbpEntityPropertyChanges shoestore
+3519; 2606 24624 CONSTRAINT public AbpFeatureGroups PK_AbpFeatureGroups shoestore
+3526; 2606 24636 CONSTRAINT public AbpFeatureValues PK_AbpFeatureValues shoestore
+3523; 2606 24631 CONSTRAINT public AbpFeatures PK_AbpFeatures shoestore
+3529; 2606 24641 CONSTRAINT public AbpLinkUsers PK_AbpLinkUsers shoestore
+3608; 2606 24821 CONSTRAINT public AbpOrganizationUnitRoles PK_AbpOrganizationUnitRoles shoestore
+3533; 2606 24649 CONSTRAINT public AbpOrganizationUnits PK_AbpOrganizationUnits shoestore
+3536; 2606 24659 CONSTRAINT public AbpPermissionGrants PK_AbpPermissionGrants shoestore
+3539; 2606 24666 CONSTRAINT public AbpPermissionGroups PK_AbpPermissionGroups shoestore
+3543; 2606 24673 CONSTRAINT public AbpPermissions PK_AbpPermissions shoestore
+3546; 2606 24680 CONSTRAINT public AbpResourcePermissionGrants PK_AbpResourcePermissionGrants shoestore
+3611; 2606 24838 CONSTRAINT public AbpRoleClaims PK_AbpRoleClaims shoestore
+3549; 2606 24687 CONSTRAINT public AbpRoles PK_AbpRoles shoestore
+3555; 2606 24694 CONSTRAINT public AbpSecurityLogs PK_AbpSecurityLogs shoestore
+3560; 2606 24701 CONSTRAINT public AbpSessions PK_AbpSessions shoestore
+3563; 2606 24708 CONSTRAINT public AbpSettingDefinitions PK_AbpSettingDefinitions shoestore
+3566; 2606 24715 CONSTRAINT public AbpSettings PK_AbpSettings shoestore
+3613; 2606 24850 CONSTRAINT public AbpTenantConnectionStrings PK_AbpTenantConnectionStrings shoestore
+3570; 2606 24723 CONSTRAINT public AbpTenants PK_AbpTenants shoestore
+3616; 2606 24862 CONSTRAINT public AbpUserClaims PK_AbpUserClaims shoestore
+3572; 2606 24728 CONSTRAINT public AbpUserDelegations PK_AbpUserDelegations shoestore
+3619; 2606 24872 CONSTRAINT public AbpUserLogins PK_AbpUserLogins shoestore
+3622; 2606 24882 CONSTRAINT public AbpUserOrganizationUnits PK_AbpUserOrganizationUnits shoestore
+3625; 2606 24899 CONSTRAINT public AbpUserPasskeys PK_AbpUserPasskeys shoestore
+3627; 2606 24909 CONSTRAINT public AbpUserPasswordHistories PK_AbpUserPasswordHistories shoestore
+3630; 2606 24919 CONSTRAINT public AbpUserRoles PK_AbpUserRoles shoestore
+3632; 2606 24936 CONSTRAINT public AbpUserTokens PK_AbpUserTokens shoestore
+3578; 2606 24743 CONSTRAINT public AbpUsers PK_AbpUsers shoestore
+3581; 2606 24750 CONSTRAINT public AppAddress PK_AppAddress shoestore
+3669; 2606 25053 CONSTRAINT public AppCartLine PK_AppCartLine shoestore
+3584; 2606 24757 CONSTRAINT public AppCatalogLookup PK_AppCatalogLookup shoestore
+3647; 2606 24989 CONSTRAINT public AppDiscount PK_AppDiscount shoestore
+3675; 2606 25077 CONSTRAINT public AppOrderHistory PK_AppOrderHistory shoestore
+3637; 2606 24948 CONSTRAINT public AppProduct PK_AppProduct shoestore
+3684; 2606 25106 CONSTRAINT public AppReturnRequest PK_AppReturnRequest shoestore
+3665; 2606 25041 CONSTRAINT public AppSaleOrder PK_AppSaleOrder shoestore
+3679; 2606 25089 CONSTRAINT public AppSaleOrderLine PK_AppSaleOrderLine shoestore
+3653; 2606 25002 CONSTRAINT public AppSku PK_AppSku shoestore
+3672; 2606 25065 CONSTRAINT public AppStockMovement PK_AppStockMovement shoestore
+3587; 2606 24764 CONSTRAINT public AppStoreNotification PK_AppStoreNotification shoestore
+3590; 2606 24772 CONSTRAINT public OpenIddictApplications PK_OpenIddictApplications shoestore
+3640; 2606 24965 CONSTRAINT public OpenIddictAuthorizations PK_OpenIddictAuthorizations shoestore
+3593; 2606 24780 CONSTRAINT public OpenIddictScopes PK_OpenIddictScopes shoestore
+3658; 2606 25024 CONSTRAINT public OpenIddictTokens PK_OpenIddictTokens shoestore
+3502; 2606 24581 CONSTRAINT public __EFMigrationsHistory PK___EFMigrationsHistory shoestore
+3594; 1259 25122 INDEX public IX_AbpAuditLogActions_AuditLogId shoestore
+3595; 1259 25123 INDEX public IX_AbpAuditLogActions_TenantId_ServiceName_MethodName_Executio~ shoestore
+3505; 1259 25124 INDEX public IX_AbpAuditLogs_TenantId_ExecutionTime shoestore
+3506; 1259 25125 INDEX public IX_AbpAuditLogs_TenantId_UserId_ExecutionTime shoestore
+3509; 1259 25126 INDEX public IX_AbpBackgroundJobs_ApplicationName_CompletionTime_IsAbandone~ shoestore
+3512; 1259 25127 INDEX public IX_AbpBlobContainers_TenantId_Name shoestore
+3602; 1259 25128 INDEX public IX_AbpBlobs_ContainerId shoestore
+3603; 1259 25129 INDEX public IX_AbpBlobs_TenantId_ContainerId_Name shoestore
+3598; 1259 25130 INDEX public IX_AbpEntityChanges_AuditLogId shoestore
+3599; 1259 25131 INDEX public IX_AbpEntityChanges_TenantId_EntityTypeFullName_EntityId shoestore
+3641; 1259 25132 INDEX public IX_AbpEntityPropertyChanges_EntityChangeId shoestore
+3517; 1259 25133 INDEX public IX_AbpFeatureGroups_Name shoestore
+3524; 1259 25136 INDEX public IX_AbpFeatureValues_Name_ProviderName_ProviderKey shoestore
+3520; 1259 25134 INDEX public IX_AbpFeatures_GroupName shoestore
+3521; 1259 25135 INDEX public IX_AbpFeatures_Name shoestore
+3527; 1259 25137 INDEX public IX_AbpLinkUsers_SourceUserId_SourceTenantId_TargetUserId_Targe~ shoestore
+3606; 1259 25138 INDEX public IX_AbpOrganizationUnitRoles_RoleId_OrganizationUnitId shoestore
+3530; 1259 25139 INDEX public IX_AbpOrganizationUnits_Code shoestore
+3531; 1259 25140 INDEX public IX_AbpOrganizationUnits_ParentId shoestore
+3534; 1259 25141 INDEX public IX_AbpPermissionGrants_TenantId_Name_ProviderName_ProviderKey shoestore
+3537; 1259 25142 INDEX public IX_AbpPermissionGroups_Name shoestore
+3540; 1259 25143 INDEX public IX_AbpPermissions_GroupName shoestore
+3541; 1259 25144 INDEX public IX_AbpPermissions_ResourceName_Name shoestore
+3544; 1259 25145 INDEX public IX_AbpResourcePermissionGrants_TenantId_Name_ResourceName_Reso~ shoestore
+3609; 1259 25146 INDEX public IX_AbpRoleClaims_RoleId shoestore
+3547; 1259 25147 INDEX public IX_AbpRoles_NormalizedName shoestore
+3550; 1259 25148 INDEX public IX_AbpSecurityLogs_TenantId_Action shoestore
+3551; 1259 25149 INDEX public IX_AbpSecurityLogs_TenantId_ApplicationName shoestore
+3552; 1259 25150 INDEX public IX_AbpSecurityLogs_TenantId_Identity shoestore
+3553; 1259 25151 INDEX public IX_AbpSecurityLogs_TenantId_UserId shoestore
+3556; 1259 25152 INDEX public IX_AbpSessions_Device shoestore
+3557; 1259 25153 INDEX public IX_AbpSessions_SessionId shoestore
+3558; 1259 25154 INDEX public IX_AbpSessions_TenantId_UserId shoestore
+3561; 1259 25155 INDEX public IX_AbpSettingDefinitions_Name shoestore
+3564; 1259 25156 INDEX public IX_AbpSettings_Name_ProviderName_ProviderKey shoestore
+3567; 1259 25157 INDEX public IX_AbpTenants_Name shoestore
+3568; 1259 25158 INDEX public IX_AbpTenants_NormalizedName shoestore
+3614; 1259 25159 INDEX public IX_AbpUserClaims_UserId shoestore
+3617; 1259 25160 INDEX public IX_AbpUserLogins_LoginProvider_ProviderKey shoestore
+3620; 1259 25161 INDEX public IX_AbpUserOrganizationUnits_UserId_OrganizationUnitId shoestore
+3623; 1259 25162 INDEX public IX_AbpUserPasskeys_UserId shoestore
+3628; 1259 25163 INDEX public IX_AbpUserRoles_RoleId_UserId shoestore
+3573; 1259 25164 INDEX public IX_AbpUsers_Email shoestore
+3574; 1259 25165 INDEX public IX_AbpUsers_NormalizedEmail shoestore
+3575; 1259 25166 INDEX public IX_AbpUsers_NormalizedUserName shoestore
+3576; 1259 25167 INDEX public IX_AbpUsers_UserName shoestore
+3579; 1259 25168 INDEX public IX_AppAddress_UserId_IsDefault shoestore
+3666; 1259 25169 INDEX public IX_AppCartLine_SkuId shoestore
+3667; 1259 25170 INDEX public IX_AppCartLine_UserId_SkuId shoestore
+3582; 1259 25171 INDEX public IX_AppCatalogLookup_Kind_Name shoestore
+3644; 1259 25172 INDEX public IX_AppDiscount_Code shoestore
+3645; 1259 25173 INDEX public IX_AppDiscount_ProductId shoestore
+3673; 1259 25174 INDEX public IX_AppOrderHistory_OrderId shoestore
+3633; 1259 25175 INDEX public IX_AppProduct_BrandId shoestore
+3634; 1259 25176 INDEX public IX_AppProduct_CategoryId shoestore
+3635; 1259 25177 INDEX public IX_AppProduct_Slug shoestore
+3680; 1259 25178 INDEX public IX_AppReturnRequest_OrderId shoestore
+3681; 1259 25179 INDEX public IX_AppReturnRequest_OrderLineId shoestore
+3682; 1259 25180 INDEX public IX_AppReturnRequest_ReplacementSkuId shoestore
+3676; 1259 25186 INDEX public IX_AppSaleOrderLine_OrderId shoestore
+3677; 1259 25187 INDEX public IX_AppSaleOrderLine_SkuId shoestore
+3659; 1259 25181 INDEX public IX_AppSaleOrder_DiscountId shoestore
+3660; 1259 25182 INDEX public IX_AppSaleOrder_Number shoestore
+3661; 1259 25183 INDEX public IX_AppSaleOrder_State_ReservationExpiresAt shoestore
+3662; 1259 25184 INDEX public IX_AppSaleOrder_UserId_CreationTime shoestore
+3663; 1259 25185 INDEX public IX_AppSaleOrder_UserId_IdempotencyKey shoestore
+3648; 1259 25188 INDEX public IX_AppSku_Code shoestore
+3649; 1259 25189 INDEX public IX_AppSku_ColorId shoestore
+3650; 1259 25190 INDEX public IX_AppSku_ProductId_ColorId_SizeId shoestore
+3651; 1259 25191 INDEX public IX_AppSku_SizeId shoestore
+3670; 1259 25192 INDEX public IX_AppStockMovement_SkuId shoestore
+3585; 1259 25193 INDEX public IX_AppStoreNotification_UserId_CreationTime shoestore
+3588; 1259 25194 INDEX public IX_OpenIddictApplications_ClientId shoestore
+3638; 1259 25195 INDEX public IX_OpenIddictAuthorizations_ApplicationId_Status_Subject_Type shoestore
+3591; 1259 25196 INDEX public IX_OpenIddictScopes_Name shoestore
+3654; 1259 25197 INDEX public IX_OpenIddictTokens_ApplicationId_Status_Subject_Type shoestore
+3655; 1259 25198 INDEX public IX_OpenIddictTokens_AuthorizationId shoestore
+3656; 1259 25199 INDEX public IX_OpenIddictTokens_ReferenceId shoestore
+3686; 2606 24788 FK CONSTRAINT public AbpAuditLogActions FK_AbpAuditLogActions_AbpAuditLogs_AuditLogId shoestore
+3688; 2606 24812 FK CONSTRAINT public AbpBlobs FK_AbpBlobs_AbpBlobContainers_ContainerId shoestore
+3687; 2606 24800 FK CONSTRAINT public AbpEntityChanges FK_AbpEntityChanges_AbpAuditLogs_AuditLogId shoestore
+3705; 2606 24978 FK CONSTRAINT public AbpEntityPropertyChanges FK_AbpEntityPropertyChanges_AbpEntityChanges_EntityChangeId shoestore
+3689; 2606 24822 FK CONSTRAINT public AbpOrganizationUnitRoles FK_AbpOrganizationUnitRoles_AbpOrganizationUnits_OrganizationU~ shoestore
+3690; 2606 24827 FK CONSTRAINT public AbpOrganizationUnitRoles FK_AbpOrganizationUnitRoles_AbpRoles_RoleId shoestore
+3685; 2606 24650 FK CONSTRAINT public AbpOrganizationUnits FK_AbpOrganizationUnits_AbpOrganizationUnits_ParentId shoestore
+3691; 2606 24839 FK CONSTRAINT public AbpRoleClaims FK_AbpRoleClaims_AbpRoles_RoleId shoestore
+3692; 2606 24851 FK CONSTRAINT public AbpTenantConnectionStrings FK_AbpTenantConnectionStrings_AbpTenants_TenantId shoestore
+3693; 2606 24863 FK CONSTRAINT public AbpUserClaims FK_AbpUserClaims_AbpUsers_UserId shoestore
+3694; 2606 24873 FK CONSTRAINT public AbpUserLogins FK_AbpUserLogins_AbpUsers_UserId shoestore
+3695; 2606 24883 FK CONSTRAINT public AbpUserOrganizationUnits FK_AbpUserOrganizationUnits_AbpOrganizationUnits_OrganizationU~ shoestore
+3696; 2606 24888 FK CONSTRAINT public AbpUserOrganizationUnits FK_AbpUserOrganizationUnits_AbpUsers_UserId shoestore
+3697; 2606 24900 FK CONSTRAINT public AbpUserPasskeys FK_AbpUserPasskeys_AbpUsers_UserId shoestore
+3698; 2606 24910 FK CONSTRAINT public AbpUserPasswordHistories FK_AbpUserPasswordHistories_AbpUsers_UserId shoestore
+3699; 2606 24920 FK CONSTRAINT public AbpUserRoles FK_AbpUserRoles_AbpRoles_RoleId shoestore
+3700; 2606 24925 FK CONSTRAINT public AbpUserRoles FK_AbpUserRoles_AbpUsers_UserId shoestore
+3701; 2606 24937 FK CONSTRAINT public AbpUserTokens FK_AbpUserTokens_AbpUsers_UserId shoestore
+3713; 2606 25054 FK CONSTRAINT public AppCartLine FK_AppCartLine_AppSku_SkuId shoestore
+3706; 2606 24990 FK CONSTRAINT public AppDiscount FK_AppDiscount_AppProduct_ProductId shoestore
+3715; 2606 25078 FK CONSTRAINT public AppOrderHistory FK_AppOrderHistory_AppSaleOrder_OrderId shoestore
+3702; 2606 24949 FK CONSTRAINT public AppProduct FK_AppProduct_AppCatalogLookup_BrandId shoestore
+3703; 2606 24954 FK CONSTRAINT public AppProduct FK_AppProduct_AppCatalogLookup_CategoryId shoestore
+3718; 2606 25107 FK CONSTRAINT public AppReturnRequest FK_AppReturnRequest_AppSaleOrderLine_OrderLineId shoestore
+3719; 2606 25112 FK CONSTRAINT public AppReturnRequest FK_AppReturnRequest_AppSaleOrder_OrderId shoestore
+3720; 2606 25117 FK CONSTRAINT public AppReturnRequest FK_AppReturnRequest_AppSku_ReplacementSkuId shoestore
+3716; 2606 25090 FK CONSTRAINT public AppSaleOrderLine FK_AppSaleOrderLine_AppSaleOrder_OrderId shoestore
+3717; 2606 25095 FK CONSTRAINT public AppSaleOrderLine FK_AppSaleOrderLine_AppSku_SkuId shoestore
+3712; 2606 25042 FK CONSTRAINT public AppSaleOrder FK_AppSaleOrder_AppDiscount_DiscountId shoestore
+3707; 2606 25003 FK CONSTRAINT public AppSku FK_AppSku_AppCatalogLookup_ColorId shoestore
+3708; 2606 25008 FK CONSTRAINT public AppSku FK_AppSku_AppCatalogLookup_SizeId shoestore
+3709; 2606 25013 FK CONSTRAINT public AppSku FK_AppSku_AppProduct_ProductId shoestore
+3714; 2606 25066 FK CONSTRAINT public AppStockMovement FK_AppStockMovement_AppSku_SkuId shoestore
+3704; 2606 24966 FK CONSTRAINT public OpenIddictAuthorizations FK_OpenIddictAuthorizations_OpenIddictApplications_Application~ shoestore
+3710; 2606 25025 FK CONSTRAINT public OpenIddictTokens FK_OpenIddictTokens_OpenIddictApplications_ApplicationId shoestore
+3711; 2606 25030 FK CONSTRAINT public OpenIddictTokens FK_OpenIddictTokens_OpenIddictAuthorizations_AuthorizationId shoestore

@@ -3,21 +3,55 @@
 import Image from "next/image";
 import Link from "next/link";
 import PageShell from "@/components/PageShell";
+import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
+import { formatVnd } from "@/lib/api";
 
 export default function CartPage() {
-  const { items, count, total, hydrated, updateQty, removeItem, clearCart } =
-    useCart();
+  const {
+    items,
+    count,
+    total,
+    hydrated,
+    syncing,
+    updateQty,
+    removeItem,
+    clearCart,
+    error,
+  } = useCart();
+  const { isAuthenticated, session } = useAuth();
 
   return (
     <PageShell
       title="Cart"
       accent="#ed3b6b"
-      subtitle="Giỏ hàng được lưu trên trình duyệt (localStorage)."
+      subtitle={
+        isAuthenticated
+          ? `Giỏ của ${session?.userName || "tài khoản"} · đồng bộ API`
+          : "Chưa đăng nhập · giỏ tạm trên máy (sẽ gộp vào account khi login)"
+      }
     >
       {!hydrated ? (
         <p className="text-white/60">Đang tải giỏ hàng...</p>
-      ) : items.length === 0 ? (
+      ) : (
+        <>
+          {error ? (
+            <p className="mb-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-100">
+              {error}
+            </p>
+          ) : null}
+          {syncing ? (
+            <p className="mb-3 text-xs text-white/45">Đang đồng bộ giỏ…</p>
+          ) : null}
+          {!isAuthenticated && items.length > 0 ? (
+            <p className="mb-4 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/65">
+              <Link href="/login?next=/cart" className="font-semibold text-nike-accent underline">
+                Đăng nhập
+              </Link>{" "}
+              để lưu giỏ theo tài khoản và thanh toán.
+            </p>
+          ) : null}
+          {items.length === 0 ? (
         <div className="page-card rounded-2xl p-8 text-center">
           <p className="text-lg text-white/70">Giỏ hàng đang trống.</p>
           <Link
@@ -51,7 +85,7 @@ export default function CartPage() {
                     <span style={{ color: item.accent }}>{item.nameAccent}</span>
                   </h2>
                   <p className="mt-1 text-sm text-white/65">
-                    Size {item.size} ·{" "}
+                    {item.size ? `Size ${item.size} · ` : null}
                     <span
                       className="ml-1 inline-block h-3 w-3 rounded-full align-middle"
                       style={{ backgroundColor: item.color }}
@@ -64,7 +98,7 @@ export default function CartPage() {
                       <button
                         type="button"
                         className="h-9 w-9 cursor-pointer text-lg"
-                        onClick={() => updateQty(item.id, item.qty - 1)}
+                        onClick={() => void updateQty(item.id, item.qty - 1)}
                         aria-label="Giảm số lượng"
                       >
                         −
@@ -75,7 +109,7 @@ export default function CartPage() {
                       <button
                         type="button"
                         className="h-9 w-9 cursor-pointer text-lg"
-                        onClick={() => updateQty(item.id, item.qty + 1)}
+                        onClick={() => void updateQty(item.id, item.qty + 1)}
                         aria-label="Tăng số lượng"
                       >
                         +
@@ -83,7 +117,7 @@ export default function CartPage() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => removeItem(item.id)}
+                      onClick={() => void removeItem(item.id)}
                       className="cursor-pointer text-sm text-white/55 underline hover:text-white"
                     >
                       Xóa
@@ -104,7 +138,7 @@ export default function CartPage() {
               <div className="flex justify-between">
                 <span>Tạm tính</span>
                 <span className="font-semibold text-white">
-                  ${total.toFixed(2)}
+                  {formatVnd(total)}
                 </span>
               </div>
             </div>
@@ -116,7 +150,7 @@ export default function CartPage() {
             </Link>
             <button
               type="button"
-              onClick={clearCart}
+              onClick={() => void clearCart()}
               className="mt-3 w-full cursor-pointer rounded-xl border border-white/15 py-3 text-sm text-white/70 hover:text-white"
             >
               Xóa giỏ hàng
@@ -129,6 +163,8 @@ export default function CartPage() {
             </Link>
           </aside>
         </div>
+      )}
+        </>
       )}
     </PageShell>
   );

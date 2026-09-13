@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: shoestore-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: shoestore
+      # Khớp backend/api/appsettings.secrets.json.example
+      POSTGRES_PASSWORD: shoestore_local_dev
+      POSTGRES_DB: ShoeStore
+    ports:
+      - "5432:5432"
+    volumes:
+      - shoestore_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shoestore -d ShoeStore"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  shoestore_pgdata:

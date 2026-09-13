@@ -1,6 +1,8 @@
 export type CartItem = {
   id: string;
   shoeId: string;
+  /** SKU UUID khi đồng bộ với backend. */
+  skuId?: string;
   name: string;
   nameAccent: string;
   price: string;
@@ -12,23 +14,57 @@ export type CartItem = {
   qty: number;
 };
 
-export const CART_STORAGE_KEY = "nike-utc-cart-v1";
+/** Chỉ dùng cho khách chưa đăng nhập. Giỏ account nằm trên API. */
+export const GUEST_CART_STORAGE_KEY = "nike-utc-cart-guest-v1";
 
-export function readCartFromStorage(): CartItem[] {
+/** Key cũ — migrate một lần rồi xóa. */
+const LEGACY_CART_STORAGE_KEY = "nike-utc-cart-v1";
+
+export function readGuestCart(): CartItem[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = window.localStorage.getItem(CART_STORAGE_KEY);
+    const raw =
+      window.localStorage.getItem(GUEST_CART_STORAGE_KEY) ??
+      window.localStorage.getItem(LEGACY_CART_STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as CartItem[];
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) return [];
+
+    // Migrate legacy → guest key
+    if (
+      window.localStorage.getItem(LEGACY_CART_STORAGE_KEY) &&
+      !window.localStorage.getItem(GUEST_CART_STORAGE_KEY)
+    ) {
+      writeGuestCart(parsed);
+      window.localStorage.removeItem(LEGACY_CART_STORAGE_KEY);
+    }
+
+    return parsed;
   } catch {
     return [];
   }
 }
 
-export function writeCartToStorage(items: CartItem[]) {
+export function writeGuestCart(items: CartItem[]) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+  window.localStorage.setItem(GUEST_CART_STORAGE_KEY, JSON.stringify(items));
+  window.localStorage.removeItem(LEGACY_CART_STORAGE_KEY);
+}
+
+export function clearGuestCart() {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(GUEST_CART_STORAGE_KEY);
+  window.localStorage.removeItem(LEGACY_CART_STORAGE_KEY);
+}
+
+/** @deprecated dùng readGuestCart */
+export function readCartFromStorage() {
+  return readGuestCart();
+}
+
+/** @deprecated dùng writeGuestCart */
+export function writeCartToStorage(items: CartItem[]) {
+  writeGuestCart(items);
 }
 
 export function cartCount(items: CartItem[]) {

@@ -6,16 +6,35 @@ export type ShoeCategory =
 
 export type ShoeProduct = {
   id: string;
+  slug?: string;
   name: string;
   nameAccent: string;
   price: string;
+  /** Giá số (VND từ API hoặc parse từ chuỗi demo). */
+  priceValue?: number;
   colors: string[];
   sizes: number[];
+  /** Lookup color/size IDs khớp thứ tự colors/sizes (khi lấy từ API). */
+  colorIds?: string[];
+  sizeIds?: string[];
+  skus?: {
+    id: string;
+    productId: string;
+    colorId: string;
+    sizeId: string;
+    code: string | null;
+    price: number;
+    active: boolean;
+    available: number;
+  }[];
   accent: string;
   thumbBg: string;
   hero: string;
   angles: [string, string, string];
   category: ShoeCategory;
+  categoryId?: string;
+  brandId?: string;
+  description?: string | null;
 };
 
 export const categories: {
@@ -198,5 +217,14 @@ export function getShoesByCategory(category: ShoeCategory | "all") {
 }
 
 export function parsePrice(price: string) {
-  return Number(price.replace(/[^0-9.]/g, "")) || 0;
+  const cleaned = price.replace(/[^\d.,]/g, "").replace(/\./g, "").replace(",", ".");
+  const asVnd = Number(price.replace(/[^\d]/g, ""));
+  if (price.includes("₫") || price.toLowerCase().includes("vnd") || asVnd >= 1000) {
+    return asVnd || 0;
+  }
+  return Number(cleaned) || 0;
+}
+
+export function getShoePriceValue(shoe: Pick<ShoeProduct, "price" | "priceValue">) {
+  return shoe.priceValue ?? parsePrice(shoe.price);
 }

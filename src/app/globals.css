@@ -88,8 +88,11 @@ body {
 }
 
 .shoe-slide {
-  transition: transform 1.65s cubic-bezier(0.33, 0.0, 0.2, 1);
-  will-change: transform;
+  overflow: hidden;
+  transition:
+    transform 1.35s cubic-bezier(0.33, 0, 0.2, 1),
+    opacity 0.55s cubic-bezier(0.33, 0, 0.2, 1);
+  will-change: transform, opacity;
   backface-visibility: hidden;
   opacity: 1;
 }
@@ -97,17 +100,20 @@ body {
 .shoe-slide-active {
   z-index: 2;
   transform: translate3d(0, 0, 0);
+  opacity: 1;
 }
 
 .shoe-slide-exit {
   z-index: 1;
-  transform: translate3d(0, -110%, 0);
+  transform: translate3d(0, -130%, 0);
+  opacity: 0;
   pointer-events: none;
 }
 
 .shoe-slide-enter {
-  z-index: 3;
-  transform: translate3d(0, 110%, 0);
+  z-index: 0;
+  transform: translate3d(0, 130%, 0);
+  opacity: 0;
   pointer-events: none;
 }
 

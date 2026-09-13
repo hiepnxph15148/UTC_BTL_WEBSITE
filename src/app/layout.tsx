@@ -29,7 +29,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="vi"
       className={`${manrope.variable} ${syne.variable} antialiased`}
     >
-      <body className="min-h-dvh bg-[#121218]">
+      <body className="min-h-dvh bg-[#121218]" suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>
     </html>

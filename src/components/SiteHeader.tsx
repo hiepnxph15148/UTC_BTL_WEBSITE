@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 
 const navLinks = [
@@ -16,6 +17,7 @@ const navLinks = [
 export default function SiteHeader() {
   const pathname = usePathname();
   const { count, hydrated } = useCart();
+  const { isAuthenticated, hydrated: authHydrated, logout, session } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const isActive = (href: string) =>
@@ -65,6 +67,37 @@ export default function SiteHeader() {
             className="w-20 bg-transparent text-sm font-semibold text-white placeholder:text-white/65 focus:outline-none md:w-28 lg:w-36"
           />
         </label>
+
+        {authHydrated ? (
+          isAuthenticated ? (
+            <div className="hidden items-center gap-3 md:flex">
+              {session?.userName?.toLowerCase() === "admin" ||
+              session?.userName?.toLowerCase() === "store-manager" ? (
+                <Link
+                  href="/admin"
+                  className="text-xs font-semibold text-nike-accent hover:brightness-110"
+                >
+                  Dashboard
+                </Link>
+              ) : null}
+              <button
+                type="button"
+                onClick={logout}
+                className="text-xs font-semibold text-white/70 hover:text-white"
+                title={session?.userName}
+              >
+                Logout
+              </button>
+            </div>
+          ) : (
+            <Link
+              href="/login"
+              className="hidden text-xs font-semibold text-white/70 hover:text-white md:inline"
+            >
+              Login
+            </Link>
+          )
+        ) : null}
 
         <Link
           href="/cart"

@@ -25,7 +25,7 @@ export default function CreateProductPage() {
     }
   }, [categories, category]);
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !price.trim()) return;
 
@@ -33,10 +33,10 @@ export default function CreateProductPage() {
     const hero = encodeURI(`/item/image ${n}.png`);
     const cat = categories.find((c) => c.id === category);
 
-    addProduct({
+    await addProduct({
       name: name.trim(),
       nameAccent: nameAccent.trim() || "New",
-      price: price.startsWith("$") ? price : `$${price}`,
+      price: price.startsWith("$") || price.includes("₫") ? price : `$${price}`,
       category: category || "lifestyle",
       accent: accent || cat?.accent || "#ed3b6b",
       hero,
@@ -54,7 +54,7 @@ export default function CreateProductPage() {
       <div>
         <h1 className="text-3xl font-extrabold">Create Product</h1>
         <p className="mt-1 text-sm text-white/55">
-          Tạm lưu localStorage — ảnh dùng từ thư mục /item
+          Tạo qua API nếu đã login admin; fallback localStorage
         </p>
       </div>
 

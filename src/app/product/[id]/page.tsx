@@ -6,16 +6,61 @@ import { notFound, useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import PageShell from "@/components/PageShell";
 import { useCart } from "@/context/CartContext";
-import { getShoeById, shoes } from "@/data/shoes";
+import { useAuth } from "@/context/AuthContext";
+import { fetchCatalogProduct } from "@/lib/api";
+import { getShoeById, shoes, type ShoeProduct } from "@/data/shoes";
 
 export default function ProductDetailPage() {
   const params = useParams<{ id: string }>();
-  const shoe = getShoeById(params.id);
-  const { addItem } = useCart();
+  const { addItem, error: cartError } = useCart();
+  const { isAuthenticated } = useAuth();
+  const [shoe, setShoe] = useState<ShoeProduct | null>(
+    () => getShoeById(params.id) ?? null,
+  );
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [color, setColor] = useState(0);
   const [size, setSize] = useState(0);
   const [added, setAdded] = useState(false);
   const [activeView, setActiveView] = useState(0);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetchCatalogProduct(params.id)
+      .then((result) => {
+        if (cancelled) return;
+        if (result) {
+          setShoe(result.shoe);
+          setLoadError(null);
+        } else if (!getShoeById(params.id)) {
+          setShoe(null);
+          setLoadError("Không tìm thấy sản phẩm");
+        }
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        const fallback = getShoeById(params.id);
+        if (fallback) {
+          setShoe(fallback);
+          setLoadError(
+            err instanceof Error
+              ? `${err.message} — dùng dữ liệu demo`
+              : "API lỗi — dùng dữ liệu demo",
+          );
+        } else {
+          setShoe(null);
+          setLoadError(err instanceof Error ? err.message : "Không tải được");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [params.id]);
 
   const gallery = useMemo(() => (shoe ? [...shoe.angles] : []), [shoe]);
 
@@ -31,16 +76,31 @@ export default function ProductDetailPage() {
     setAdded(false);
   }, [params.id]);
 
-  if (!shoe) notFound();
+  if (!loading && !shoe) notFound();
+  if (!shoe) {
+    return (
+      <PageShell title="Product" subtitle="Đang tải…">
+        <p className="text-white/60">Loading…</p>
+      </PageShell>
+    );
+  }
 
-  const onBuy = () => {
-    addItem({
-      shoe,
-      color: shoe.colors[color],
-      size: shoe.sizes[size],
-    });
-    setAdded(true);
-    window.setTimeout(() => setAdded(false), 1600);
+  const onBuy = async () => {
+    setBusy(true);
+    try {
+      const fail = await addItem({
+        shoe,
+        color: shoe.colors[color],
+        size: shoe.sizes[size],
+        colorIndex: color,
+        sizeIndex: size,
+      });
+      if (fail) return;
+      setAdded(true);
+      window.setTimeout(() => setAdded(false), 1600);
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -49,6 +109,22 @@ export default function ProductDetailPage() {
       accent={shoe.accent}
       subtitle="Chi tiết sản phẩm — chọn màu, size rồi thêm vào giỏ hàng."
     >
+      {loadError ? (
+        <p className="mb-4 text-sm text-amber-200/80">{loadError}</p>
+      ) : null}
+      {cartError ? (
+        <p className="mb-4 text-sm text-red-200/90">{cartError}</p>
+      ) : null}
+      {!isAuthenticated ? (
+        <p className="mb-4 text-sm text-white/55">
+          Giỏ local khi chưa login.{" "}
+          <Link href="/login" className="text-nike-accent underline">
+            Đăng nhập
+          </Link>{" "}
+          để đồng bộ giỏ API.
+        </p>
+      ) : null}
+
       <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
         <div className="page-card relative overflow-hidden rounded-2xl p-6 sm:p-8">
           <div
@@ -119,13 +195,16 @@ export default function ProductDetailPage() {
             <span style={{ color: shoe.accent }}>{shoe.nameAccent}</span>
           </h2>
           <p className="mt-3 text-2xl font-semibold">{shoe.price}</p>
+          {shoe.description ? (
+            <p className="mt-3 text-sm text-white/60">{shoe.description}</p>
+          ) : null}
 
           <div className="mt-8">
             <p className="text-sm font-semibold">Colors</p>
             <div className="mt-3 flex gap-3">
               {shoe.colors.map((value, index) => (
                 <button
-                  key={value}
+                  key={`${value}-${index}`}
                   type="button"
                   aria-pressed={color === index}
                   onClick={() => setColor(index)}
@@ -142,14 +221,14 @@ export default function ProductDetailPage() {
 
           <div className="mt-6">
             <p className="text-sm font-semibold">Size</p>
-            <div className="mt-3 flex gap-3">
+            <div className="mt-3 flex flex-wrap gap-3">
               {shoe.sizes.map((value, index) => (
                 <button
                   key={value}
                   type="button"
                   aria-pressed={size === index}
                   onClick={() => setSize(index)}
-                  className={`h-10 w-10 cursor-pointer rounded-full border text-sm font-semibold ${
+                  className={`h-10 min-w-10 cursor-pointer rounded-full border px-2 text-sm font-semibold ${
                     size === index
                       ? "border-white bg-white text-[#181820]"
                       : "border-white/35 text-white/75"
@@ -165,14 +244,15 @@ export default function ProductDetailPage() {
             <button
               type="button"
               onClick={onBuy}
-              className="cursor-pointer rounded-xl px-6 py-3 text-sm font-bold tracking-wide text-white transition-transform hover:scale-105"
+              disabled={busy}
+              className="cursor-pointer rounded-xl px-6 py-3 text-sm font-bold tracking-wide text-white transition-transform hover:scale-105 disabled:opacity-70"
               style={{
                 background: added
                   ? "linear-gradient(90deg, #16a34a, #4ade80)"
                   : `linear-gradient(90deg, ${shoe.accent}, #ff6b95)`,
               }}
             >
-              {added ? "ADDED TO CART" : "BUY"}
+              {added ? "ADDED TO CART" : busy ? "ADDING…" : "BUY"}
             </button>
             <Link
               href="/cart"

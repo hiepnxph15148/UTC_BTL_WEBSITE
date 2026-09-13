@@ -1,17 +1,33 @@
+"use client";
+
 import Link from "next/link";
 import PageShell from "@/components/PageShell";
 import ShoeCard from "@/components/ShoeCard";
-import { categorySections, getShoesByCategory } from "@/data/shoes";
+import { categorySections, type ShoeCategory } from "@/data/shoes";
+import { useCatalogProducts } from "@/hooks/useCatalogProducts";
 
 const PREVIEW = 3;
 
 export default function CollectionsPage() {
+  const { shoes, loading, error, fromApi } = useCatalogProducts({ take: 100 });
+
   return (
     <PageShell
       title="Collections"
       accent="#3b82f6"
-      subtitle="Mỗi mục hiện 3 sản phẩm nổi bật — bấm Show all để xem toàn bộ category."
+      subtitle={
+        fromApi
+          ? "Dữ liệu từ GET /api/app/store/products"
+          : "Mỗi mục hiện 3 sản phẩm nổi bật — bấm Show all để xem toàn bộ category."
+      }
     >
+      {loading ? (
+        <p className="mb-6 text-sm text-white/50">Đang tải sản phẩm từ API…</p>
+      ) : null}
+      {error ? (
+        <p className="mb-6 text-sm text-amber-200/80">{error}</p>
+      ) : null}
+
       <nav className="mb-10 flex flex-wrap gap-2.5">
         {categorySections.map((cat) => (
           <a
@@ -27,7 +43,9 @@ export default function CollectionsPage() {
 
       <div className="space-y-14">
         {categorySections.map((cat) => {
-          const all = getShoesByCategory(cat.id);
+          const all = shoes.filter(
+            (shoe) => shoe.category === (cat.id as ShoeCategory),
+          );
           const preview = all.slice(0, PREVIEW);
           const hasMore = all.length > PREVIEW;
 

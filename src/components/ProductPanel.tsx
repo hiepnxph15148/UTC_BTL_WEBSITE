@@ -12,32 +12,43 @@ type Props = {
 
 export default function ProductPanel({ shoes, activeIndex }: Props) {
   const shoe = shoes[activeIndex];
-  const { addItem } = useCart();
+  const { addItem, error } = useCart();
   const [color, setColor] = useState(0);
   const [size, setSize] = useState(0);
   const [added, setAdded] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
 
   useEffect(() => {
     setColor(0);
     setSize(0);
     setAdded(false);
+    setLocalError(null);
   }, [shoe.id]);
 
-  const onBuy = () => {
-    addItem({
+  const onBuy = async () => {
+    setLocalError(null);
+    const fail = await addItem({
       shoe,
       color: shoe.colors[color],
       size: shoe.sizes[size],
+      colorIndex: color,
+      sizeIndex: size,
     });
+    if (fail) {
+      setLocalError(fail);
+      return;
+    }
     setAdded(true);
     window.setTimeout(() => setAdded(false), 1600);
   };
 
+  const displayError = localError || error;
+
   return (
-    <div className="flex w-full max-w-full flex-col gap-4 sm:gap-5 lg:w-[300px] lg:gap-7">
-      <div className="relative h-[88px] overflow-hidden sm:h-[110px] lg:h-[132px]">
+    <div className="flex w-full max-w-full flex-col gap-4 sm:gap-5 lg:w-[360px] lg:gap-7">
+      <div className="relative h-[140px] overflow-hidden sm:h-[168px] lg:h-[196px]">
         {shoes.map((item, index) => (
-          <div key={item.id} className={slideClass(index, activeIndex)}>
+          <div key={item.id} className={`${slideClass(index, activeIndex)} pr-1`}>
             <h1 className="font-display text-[28px] font-extrabold leading-[1.08] tracking-tight sm:text-[32px] lg:text-[36px]">
               {item.name}{" "}
               <span style={{ color: item.accent }}>{item.nameAccent}</span>
@@ -49,6 +60,11 @@ export default function ProductPanel({ shoes, activeIndex }: Props) {
         ))}
       </div>
 
+      {displayError ? (
+        <p className="rounded-lg border border-red-400/30 bg-red-400/10 px-3 py-2 text-xs text-red-100">
+          {displayError}
+        </p>
+      ) : null}
       <div className="flex flex-wrap items-end gap-6 sm:gap-8">
         <div>
           <p className="text-sm font-semibold text-white">Colors</p>

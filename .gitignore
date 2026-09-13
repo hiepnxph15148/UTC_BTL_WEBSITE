@@ -32,6 +32,14 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# backend secrets & local data
+backend/api/appsettings.secrets.json
+backend/api/openiddict.pfx
+backend/api/Logs/
+backend/api/App_Data/
+backend/backups/*.dump
 
 # vercel
 .vercel

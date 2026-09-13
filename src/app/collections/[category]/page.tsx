@@ -1,30 +1,26 @@
+"use client";
+
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, useParams } from "next/navigation";
 import PageShell from "@/components/PageShell";
 import ShoeCard from "@/components/ShoeCard";
 import {
   categorySections,
-  getShoesByCategory,
   type ShoeCategory,
 } from "@/data/shoes";
-
-type Props = {
-  params: Promise<{ category: string }>;
-};
+import { useCatalogProducts } from "@/hooks/useCatalogProducts";
 
 const validIds = new Set(categorySections.map((c) => c.id));
 
-export function generateStaticParams() {
-  return categorySections.map((c) => ({ category: c.id }));
-}
-
-export default async function CategoryCollectionPage({ params }: Props) {
-  const { category } = await params;
+export default function CategoryCollectionPage() {
+  const params = useParams<{ category: string }>();
+  const category = params.category;
 
   if (!validIds.has(category as ShoeCategory)) notFound();
 
   const cat = categorySections.find((c) => c.id === category)!;
-  const list = getShoesByCategory(cat.id);
+  const { shoes, loading, error } = useCatalogProducts({ take: 100 });
+  const list = shoes.filter((shoe) => shoe.category === cat.id);
 
   return (
     <PageShell
@@ -32,6 +28,11 @@ export default async function CategoryCollectionPage({ params }: Props) {
       accent={cat.accent}
       subtitle={`${cat.blurb} · ${list.length} sản phẩm`}
     >
+      {loading ? (
+        <p className="mb-4 text-sm text-white/50">Đang tải…</p>
+      ) : null}
+      {error ? <p className="mb-4 text-sm text-amber-200/80">{error}</p> : null}
+
       <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
         <Link
           href="/collections"

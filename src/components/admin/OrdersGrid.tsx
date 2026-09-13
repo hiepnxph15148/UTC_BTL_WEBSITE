@@ -11,6 +11,8 @@ import { AgGridReact } from "ag-grid-react";
 import { useEffect, useMemo, useState } from "react";
 import { fakeOrders } from "@/lib/admin-store";
 import { readOrdersFromStorage, type StoredOrder } from "@/lib/orders";
+import { formatVnd } from "@/lib/api";
+import { orderStateLabel, useAdmin } from "@/context/AdminContext";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -47,7 +49,7 @@ function StatusCell(props: ICellRendererParams<OrderRow>) {
       ? "text-orange-400"
       : status === "Shipped"
         ? "text-sky-400"
-        : status === "Processing"
+        : status === "Processing" || status === "Confirmed"
           ? "text-amber-300"
           : "text-[#ed3b6b]";
 
@@ -72,14 +74,30 @@ function toRow(order: StoredOrder | (typeof fakeOrders)[number]): OrderRow {
 }
 
 export default function OrdersGrid() {
+  const { orders, fromApi } = useAdmin();
   const [rows, setRows] = useState<OrderRow[]>(() => fakeOrders.map(toRow));
 
   useEffect(() => {
+    if (fromApi && orders.length) {
+      setRows(
+        orders.map((order) => ({
+          id: order.number || order.id,
+          product: order.trackingCode || order.carrier || "Đơn hàng",
+          date: order.reservationExpiresAt?.slice(0, 10) || "",
+          payment: "COD",
+          customer: order.addressSnapshot?.split("|")[0] || "Khách",
+          status: orderStateLabel(order.state),
+          amount: order.total,
+        })),
+      );
+      return;
+    }
+
     const live = readOrdersFromStorage().map(toRow);
     const seed = fakeOrders.map(toRow);
     const ids = new Set(live.map((o) => o.id));
     setRows([...live, ...seed.filter((o) => !ids.has(o.id))]);
-  }, []);
+  }, [orders, fromApi]);
 
   const columnDefs = useMemo<ColDef<OrderRow>[]>(
     () => [
@@ -120,7 +138,7 @@ export default function OrdersGrid() {
         flex: 0.8,
         minWidth: 110,
         valueFormatter: (p) =>
-          typeof p.value === "number" ? `$${p.value.toFixed(2)}` : "",
+          typeof p.value === "number" ? formatVnd(p.value) : "",
         sortable: true,
       },
     ],

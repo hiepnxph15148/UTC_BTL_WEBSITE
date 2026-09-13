@@ -23,9 +23,12 @@ export default function AdminLayout({
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <span className="hidden rounded-full border border-white/10 px-3 py-1.5 text-xs text-white/55 sm:inline">
-                  Không hiện link ngoài store
-                </span>
+                <a
+                  href="/"
+                  className="hidden rounded-full border border-white/10 px-3 py-1.5 text-xs text-white/55 hover:text-white sm:inline"
+                >
+                  Trang chủ
+                </a>
                 <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#ed3b6b]/20 text-sm font-bold text-[#ed3b6b]">
                   A
                 </div>

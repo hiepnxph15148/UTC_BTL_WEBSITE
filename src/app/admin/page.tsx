@@ -2,9 +2,10 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useAdmin } from "@/context/AdminContext";
+import { orderStateLabel, useAdmin } from "@/context/AdminContext";
 import { fakeOrders } from "@/lib/admin-store";
 import { parsePrice } from "@/data/shoes";
+import { formatVnd } from "@/lib/api";
 
 const RevenueChart = dynamic(
   () => import("@/components/admin/RevenueChart"),
@@ -29,13 +30,16 @@ const ProductsGrid = dynamic(
 );
 
 export default function AdminDashboardPage() {
-  const { products, categories, hydrated } = useAdmin();
+  const { products, categories, hydrated, fromApi, error, report, orders } =
+    useAdmin();
 
-  const totalRevenue = products.reduce(
-    (sum, p) =>
-      sum + parsePrice(p.price) * Math.max(1, Math.floor(p.sales / 50)),
-    0,
-  );
+  const totalRevenue =
+    report?.deliveredSales ??
+    products.reduce(
+      (sum, p) =>
+        sum + parsePrice(p.price) * Math.max(1, Math.floor(p.sales / 50)),
+      0,
+    );
   const activeStock = products.reduce((sum, p) => sum + p.stock, 0);
   const bestSellers = [...products]
     .sort((a, b) => b.sales - a.sales)
@@ -44,8 +48,10 @@ export default function AdminDashboardPage() {
   const stats = [
     {
       label: "Total Revenue",
-      value: `$${totalRevenue.toLocaleString("en-US", { maximumFractionDigits: 0 })}`,
-      delta: "+34.7%",
+      value: report
+        ? formatVnd(totalRevenue)
+        : `$${totalRevenue.toLocaleString("en-US", { maximumFractionDigits: 0 })}`,
+      delta: fromApi ? "API report" : "+34.7%",
     },
     {
       label: "Active Products",
@@ -53,9 +59,9 @@ export default function AdminDashboardPage() {
       delta: `+${categories.length} cats`,
     },
     {
-      label: "Stock Units",
-      value: String(activeStock),
-      delta: "+12.4%",
+      label: fromApi ? "Orders (period)" : "Stock Units",
+      value: fromApi ? String(report?.orders ?? orders.length) : String(activeStock),
+      delta: fromApi ? `${report?.cancelled ?? 0} cancelled` : "+12.4%",
     },
   ];
 
@@ -67,8 +73,13 @@ export default function AdminDashboardPage() {
             Dashboard
           </h1>
           <p className="mt-1 text-sm text-white/55">
-            Thống kê cửa hàng · quản lý sản phẩm & danh mục
+            {fromApi
+              ? "Đã kết nối ShoeStore API (admin-products / report / orders)"
+              : "Thống kê cửa hàng · quản lý sản phẩm & danh mục"}
           </p>
+          {error ? (
+            <p className="mt-1 text-xs text-amber-200/80">{error}</p>
+          ) : null}
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
@@ -179,7 +190,24 @@ export default function AdminDashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {fakeOrders.slice(0, 5).map((order) => (
+              {(fromApi && orders.length
+                ? orders.slice(0, 5).map((order) => ({
+                    id: order.number || order.id,
+                    product: order.carrier || order.trackingCode || "Đơn hàng",
+                    date: order.reservationExpiresAt?.slice(0, 10) || "—",
+                    payment: "COD",
+                    customer:
+                      order.addressSnapshot?.split(/[|,]/)[0]?.trim() ||
+                      "Khách",
+                    status: orderStateLabel(order.state),
+                    amount: order.total,
+                    amountLabel: formatVnd(order.total),
+                  }))
+                : fakeOrders.slice(0, 5).map((order) => ({
+                    ...order,
+                    amountLabel: `$${order.amount.toFixed(2)}`,
+                  }))
+              ).map((order) => (
                 <tr key={order.id} className="border-b border-white/5">
                   <td className="py-3 font-medium">{order.product}</td>
                   <td className="py-3 text-white/60">{order.id}</td>
@@ -193,7 +221,8 @@ export default function AdminDashboardPage() {
                           ? "text-orange-400"
                           : order.status === "Shipped"
                             ? "text-sky-400"
-                            : order.status === "Processing"
+                            : order.status === "Processing" ||
+                                order.status === "Confirmed"
                               ? "text-amber-300"
                               : "text-[#ed3b6b]"
                       }`}
@@ -202,9 +231,7 @@ export default function AdminDashboardPage() {
                       {order.status}
                     </span>
                   </td>
-                  <td className="py-3 font-semibold">
-                    ${order.amount.toFixed(2)}
-                  </td>
+                  <td className="py-3 font-semibold">{order.amountLabel}</td>
                 </tr>
               ))}
             </tbody>

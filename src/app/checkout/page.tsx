@@ -2,94 +2,83 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import PageShell from "@/components/PageShell";
+import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
-import { appendOrder } from "@/lib/orders";
-
-const methods = [
-  {
-    id: "visa",
-    label: "Visa / Mastercard",
-    desc: "Thanh toán thẻ quốc tế",
-  },
-  {
-    id: "momo",
-    label: "MoMo",
-    desc: "Ví điện tử MoMo",
-  },
-  {
-    id: "paypal",
-    label: "PayPal",
-    desc: "Thanh toán PayPal",
-  },
-  {
-    id: "cash",
-    label: "Cash on Delivery",
-    desc: "Thanh toán khi nhận hàng",
-  },
-] as const;
-
-type MethodId = (typeof methods)[number]["id"];
+import { formatVnd, storeApi } from "@/lib/api";
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, count, total, hydrated, clearCart } = useCart();
-  const [method, setMethod] = useState<MethodId>("visa");
+  const { isAuthenticated, hydrated: authHydrated } = useAuth();
+  const { items, count, total, hydrated, clearCart, error: cartError } =
+    useCart();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
-  const [card, setCard] = useState("");
-  const [expiry, setExpiry] = useState("");
-  const [cvv, setCvv] = useState("");
+  const [coupon, setCoupon] = useState("");
   const [paying, setPaying] = useState(false);
-  const [done, setDone] = useState<{ orderId: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState<{ orderId: string; number: string } | null>(
+    null,
+  );
+  const [quoteTotal, setQuoteTotal] = useState<number | null>(null);
+  const [shippingFee, setShippingFee] = useState<number | null>(null);
 
-  const shipping = total > 200 ? 0 : 8;
-  const grandTotal = useMemo(() => total + shipping, [total, shipping]);
+  const displayTotal = quoteTotal ?? total;
+  const displayShipping = shippingFee ?? 0;
 
-  const paymentLabel =
-    methods.find((m) => m.id === method)?.label.split(" / ")[0] ?? "Visa";
+  const grandLabel = useMemo(() => formatVnd(displayTotal), [displayTotal]);
 
-  const onPay = (e: React.FormEvent) => {
+  const onPay = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!items.length || paying) return;
     if (!name.trim() || !phone.trim() || !address.trim()) return;
-    if (method === "visa" && (!card.trim() || !expiry.trim() || !cvv.trim())) {
+
+    if (!isAuthenticated) {
+      router.push(`/login?next=${encodeURIComponent("/checkout")}`);
       return;
     }
 
     setPaying(true);
-    const orderId = `#${25400 + Math.floor(Math.random() * 900)}`;
-
-    window.setTimeout(() => {
-      appendOrder({
-        id: orderId,
-        product:
-          items.length === 1
-            ? `${items[0].name} ${items[0].nameAccent}`
-            : `${items[0].name} ${items[0].nameAccent} +${items.length - 1}`,
-        date: new Date().toISOString().slice(0, 10),
-        payment: paymentLabel,
-        customer: name.trim(),
-        status: "Processing",
-        amount: Number(grandTotal.toFixed(2)),
-        items: items.map((item) => ({
-          name: `${item.name} ${item.nameAccent}`,
-          qty: item.qty,
-          size: item.size,
-          price: item.priceValue,
-        })),
+    setError(null);
+    try {
+      const created = await storeApi.createAddress({
+        recipient: name.trim(),
+        phone: phone.trim(),
+        fullAddress: address.trim(),
+        isDefault: true,
       });
 
-      clearCart();
+      const quote = await storeApi.quote({
+        addressId: created.id,
+        coupon: coupon.trim() || null,
+      });
+      setQuoteTotal(quote.total);
+      setShippingFee(quote.shippingFee);
+
+      const idempotencyKey = `web-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      const order = await storeApi.placeOrder({
+        addressId: created.id,
+        coupon: coupon.trim() || null,
+        expectedTotal: quote.total,
+        idempotencyKey,
+      });
+
+      await clearCart();
+      setDone({
+        orderId: order.order.id,
+        number: order.order.number || order.order.id.slice(0, 8),
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Đặt hàng thất bại");
+    } finally {
       setPaying(false);
-      setDone({ orderId });
-    }, 900);
+    }
   };
 
-  if (!hydrated) {
+  if (!hydrated || !authHydrated) {
     return (
       <PageShell title="Payment" subtitle="Đang tải thông tin thanh toán...">
         <p className="text-white/60">Loading…</p>
@@ -102,7 +91,7 @@ export default function CheckoutPage() {
       <PageShell
         title="Payment success"
         accent="#c6e600"
-        subtitle="Đơn hàng đã được ghi nhận."
+        subtitle="Đơn COD đã được tạo trên ShoeStore API."
       >
         <div className="page-card mx-auto max-w-lg rounded-2xl p-8 text-center">
           <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#c6e600]">
@@ -113,7 +102,7 @@ export default function CheckoutPage() {
           </h2>
           <p className="mt-3 text-white/65">
             Mã đơn:{" "}
-            <span className="font-semibold text-white">{done.orderId}</span>
+            <span className="font-semibold text-white">{done.number}</span>
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
             <Link
@@ -154,8 +143,23 @@ export default function CheckoutPage() {
     <PageShell
       title="Payment"
       accent="#ed3b6b"
-      subtitle="Checkout · chọn phương thức thanh toán và xác nhận đơn."
+      subtitle="Checkout COD · quote + place-order qua ShoeStore API."
     >
+      {!isAuthenticated ? (
+        <div className="mb-5 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
+          Bạn chưa đăng nhập. Đặt hàng cần tài khoản API —{" "}
+          <Link href="/login?next=/checkout" className="font-semibold underline">
+            Đăng nhập
+          </Link>
+        </div>
+      ) : null}
+
+      {(error || cartError) && (
+        <div className="mb-5 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-100">
+          {error || cartError}
+        </div>
+      )}
+
       <form
         onSubmit={onPay}
         className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]"
@@ -200,80 +204,22 @@ export default function CheckoutPage() {
                   className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none ring-nike-accent focus:ring-2"
                 />
               </label>
+              <label className="block space-y-1.5 sm:col-span-2">
+                <span className="text-xs font-semibold uppercase tracking-wide text-white/50">
+                  Mã giảm giá (tuỳ chọn)
+                </span>
+                <input
+                  value={coupon}
+                  onChange={(e) => setCoupon(e.target.value)}
+                  placeholder="WELCOME"
+                  className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none ring-nike-accent focus:ring-2"
+                />
+              </label>
             </div>
-          </section>
-
-          <section className="page-card rounded-2xl p-5 sm:p-6">
-            <h2 className="text-xl font-bold">
-              Phương thức thanh toán
-            </h2>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {methods.map((item) => {
-                const active = method === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setMethod(item.id)}
-                    className={`rounded-xl border p-4 text-left transition ${
-                      active
-                        ? "border-nike-accent bg-nike-accent/15 shadow-[0_0_24px_rgba(237,59,107,0.2)]"
-                        : "border-white/10 bg-black/20 hover:border-white/25"
-                    }`}
-                  >
-                    <p className="font-semibold">{item.label}</p>
-                    <p className="mt-1 text-xs text-white/55">{item.desc}</p>
-                  </button>
-                );
-              })}
-            </div>
-
-            {method === "visa" ? (
-              <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                <label className="block space-y-1.5 sm:col-span-3">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-white/50">
-                    Số thẻ
-                  </span>
-                  <input
-                    required
-                    value={card}
-                    onChange={(e) => setCard(e.target.value)}
-                    placeholder="•••• •••• •••• ••••"
-                    className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none ring-nike-accent focus:ring-2"
-                  />
-                </label>
-                <label className="block space-y-1.5 sm:col-span-2">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-white/50">
-                    Hết hạn
-                  </span>
-                  <input
-                    required
-                    value={expiry}
-                    onChange={(e) => setExpiry(e.target.value)}
-                    placeholder="MM/YY"
-                    className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none ring-nike-accent focus:ring-2"
-                  />
-                </label>
-                <label className="block space-y-1.5">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-white/50">
-                    CVV
-                  </span>
-                  <input
-                    required
-                    value={cvv}
-                    onChange={(e) => setCvv(e.target.value)}
-                    placeholder="123"
-                    className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none ring-nike-accent focus:ring-2"
-                  />
-                </label>
-              </div>
-            ) : (
-              <p className="mt-4 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/60">
-                Bạn sẽ xác nhận thanh toán bằng{" "}
-                <span className="font-semibold text-white">{paymentLabel}</span>{" "}
-                sau khi đặt đơn (demo).
-              </p>
-            )}
+            <p className="mt-4 text-sm text-white/55">
+              Backend giai đoạn 1 chỉ hỗ trợ COD. Phí ship do API tính (30.000đ,
+              miễn ship từ 1.000.000đ).
+            </p>
           </section>
         </div>
 
@@ -296,11 +242,11 @@ export default function CheckoutPage() {
                     {item.name} {item.nameAccent}
                   </p>
                   <p className="text-xs text-white/50">
-                    Size {item.size} · x{item.qty}
+                    {item.size ? `Size ${item.size} · ` : ""}x{item.qty}
                   </p>
                 </div>
                 <p className="text-sm font-semibold">
-                  ${(item.priceValue * item.qty).toFixed(2)}
+                  {formatVnd(item.priceValue * item.qty)}
                 </p>
               </div>
             ))}
@@ -310,20 +256,18 @@ export default function CheckoutPage() {
             <div className="flex justify-between">
               <span>Sản phẩm ({count})</span>
               <span className="font-semibold text-white">
-                ${total.toFixed(2)}
+                {formatVnd(total)}
               </span>
             </div>
             <div className="flex justify-between">
-              <span>Ship</span>
+              <span>Ship (API)</span>
               <span className="font-semibold text-white">
-                {shipping === 0 ? "Free" : `$${shipping.toFixed(2)}`}
+                {shippingFee === null ? "Khi đặt đơn" : formatVnd(displayShipping)}
               </span>
             </div>
             <div className="flex justify-between text-base text-white">
               <span className="font-bold">Tổng</span>
-              <span className="font-extrabold text-nike-accent">
-                ${grandTotal.toFixed(2)}
-              </span>
+              <span className="font-extrabold text-nike-accent">{grandLabel}</span>
             </div>
           </div>
 
@@ -332,7 +276,11 @@ export default function CheckoutPage() {
             disabled={paying}
             className="mt-6 w-full cursor-pointer rounded-xl bg-gradient-to-r from-nike-accent to-[#ff6b95] py-3.5 text-sm font-bold tracking-wide text-white disabled:cursor-wait disabled:opacity-70"
           >
-            {paying ? "Đang xử lý…" : `Pay $${grandTotal.toFixed(2)}`}
+            {paying
+              ? "Đang xử lý…"
+              : isAuthenticated
+                ? "Đặt hàng COD"
+                : "Đăng nhập để đặt hàng"}
           </button>
           <button
             type="button"
