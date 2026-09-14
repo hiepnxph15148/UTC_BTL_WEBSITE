@@ -40,6 +40,8 @@ pg_restore --no-owner --no-acl --clean --if-exists \
   backend/backups/ShoeStore-20260912-095628.dump
 ```
 
+DB trên Render tên `shoestore` (chữ thường — bắt buộc bởi Blueprint). App không phụ thuộc tên DB trong connection string.
+
 Dump trong repo là **Postgres 17**; Render free thường là **16**. Nếu `pg_restore` báo version:
 
 - Dùng Neon (Postgres 16/17) làm DB, hoặc

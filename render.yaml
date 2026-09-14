@@ -7,7 +7,7 @@
 databases:
   - name: shoestore-db
     plan: free
-    databaseName: ShoeStore
+    databaseName: shoestore
     user: shoestore
     # Dump local là Postgres 17 — nếu restore lỗi version, dùng Neon PG17 (xem RENDER.md)
     postgresMajorVersion: "16"
