@@ -22,6 +22,24 @@ export enum CodState {
   Refunded = 3,
 }
 
+export enum ReturnKind {
+  Refund = 0,
+  Exchange = 1,
+}
+
+export enum ReturnState {
+  Requested = 0,
+  Approved = 1,
+  Rejected = 2,
+  Received = 3,
+  Completed = 4,
+}
+
+export enum DiscountKind {
+  Fixed = 0,
+  Percentage = 1,
+}
+
 export type LookupDto = {
   id: string;
   kind: LookupKind;
@@ -50,6 +68,12 @@ export type ProductInput = {
   published: boolean;
 };
 
+export type LookupInput = {
+  kind: LookupKind;
+  name: string;
+  active: boolean;
+};
+
 export type SkuDto = {
   id: string;
   productId: string;
@@ -59,6 +83,14 @@ export type SkuDto = {
   price: number;
   active: boolean;
   available: number;
+};
+
+export type SkuInput = {
+  colorId: string;
+  sizeId: string;
+  code: string;
+  price: number;
+  active: boolean;
 };
 
 export type CartLineDto = {
@@ -141,10 +173,161 @@ export type OrderLineDto = {
   discount: number;
 };
 
+export type HistoryDto = {
+  at: string;
+  actorId: string | null;
+  action: string | null;
+  note: string | null;
+};
+
 export type OrderDetailDto = {
   order: OrderDto;
   items: OrderLineDto[] | null;
-  history: { at: string; actorId: string | null; action: string | null; note: string | null }[] | null;
+  history: HistoryDto[] | null;
+};
+
+export type NoteInput = {
+  note: string;
+};
+
+export type ShipmentInput = {
+  carrier: string;
+  trackingCode: string;
+};
+
+export type InventoryDto = {
+  skuId: string;
+  code: string | null;
+  onHand: number;
+  reserved: number;
+  available: number;
+};
+
+export type StockInput = {
+  skuId: string;
+  delta: number;
+  reason: string;
+};
+
+export type MovementDto = {
+  id: string;
+  skuId: string;
+  delta: number;
+  balance: number;
+  reason: string | null;
+  orderId: string | null;
+  at: string;
+};
+
+export type ReturnDto = {
+  id: string;
+  orderId: string;
+  orderLineId: string;
+  kind: ReturnKind;
+  state: ReturnState;
+  quantity: number;
+  reason: string | null;
+  replacementSkuId: string | null;
+  refundAmount: number;
+  restock: boolean;
+};
+
+export type ReturnInput = {
+  orderLineId: string;
+  quantity: number;
+  kind: ReturnKind;
+  replacementSkuId?: string | null;
+  reason: string;
+};
+
+export type ReturnActionInput = {
+  note: string;
+  state: ReturnState;
+  restock: boolean;
+};
+
+export type NotificationDto = {
+  id: string;
+  orderId: string | null;
+  message: string | null;
+  isRead: boolean;
+  at: string;
+};
+
+export type ProfileDto = {
+  extraProperties?: Record<string, unknown> | null;
+  userName: string | null;
+  email: string | null;
+  name: string | null;
+  surname: string | null;
+  phoneNumber: string | null;
+  isExternal: boolean;
+  hasPassword: boolean;
+  concurrencyStamp: string | null;
+};
+
+export type UpdateProfileDto = {
+  extraProperties?: Record<string, unknown> | null;
+  userName?: string | null;
+  email?: string | null;
+  name?: string | null;
+  surname?: string | null;
+  phoneNumber?: string | null;
+  concurrencyStamp?: string | null;
+};
+
+export type ChangePasswordInput = {
+  currentPassword?: string | null;
+  newPassword: string;
+};
+
+export type SendPasswordResetCodeDto = {
+  email: string;
+  appName: string;
+  returnUrl?: string | null;
+  returnUrlHash?: string | null;
+};
+
+export type VerifyPasswordResetTokenInput = {
+  userId: string;
+  resetToken: string;
+};
+
+export type ResetPasswordDto = {
+  userId: string;
+  resetToken: string;
+  password: string;
+};
+
+export type DiscountDto = {
+  id: string;
+  code: string | null;
+  name: string | null;
+  productId: string | null;
+  kind: DiscountKind;
+  value: number;
+  maxDiscount: number;
+  minimumSubtotal: number;
+  startsAt: string;
+  endsAt: string;
+  usageLimit: number;
+  perCustomerLimit: number;
+  active: boolean;
+};
+
+export type DiscountInput = {
+  code?: string | null;
+  name: string;
+  productId?: string | null;
+  kind: DiscountKind;
+  value: number;
+  maxDiscount: number;
+  minimumSubtotal: number;
+  startsAt: string;
+  endsAt: string;
+  usageLimit: number;
+  perCustomerLimit: number;
+  active: boolean;
 };
 
 export type ReportDto = {

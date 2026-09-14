@@ -3,14 +3,17 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
+import { storeApi, type NotificationDto } from "@/lib/api";
 
 const navLinks = [
   { label: "Home", href: "/" },
   { label: "Offers", href: "/offers" },
   { label: "Collections", href: "/collections" },
+  { label: "Orders", href: "/orders" },
+  { label: "Returns", href: "/returns" },
   { label: "Contact", href: "/contact" },
 ] as const;
 
@@ -19,9 +22,63 @@ export default function SiteHeader() {
   const { count, hydrated } = useCart();
   const { isAuthenticated, hydrated: authHydrated, logout, session } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationDto[]>([]);
+  const notifRef = useRef<HTMLDivElement>(null);
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
+
+  const loadNotifications = useCallback(async () => {
+    if (!isAuthenticated) {
+      setNotifications([]);
+      return;
+    }
+    try {
+      setNotifications(await storeApi.getNotifications({ take: 20 }));
+    } catch {
+      setNotifications([]);
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!authHydrated || !isAuthenticated) return;
+    void loadNotifications();
+  }, [authHydrated, isAuthenticated, loadNotifications]);
+
+  useEffect(() => {
+    if (!notifOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      if (!notifRef.current?.contains(e.target as Node)) {
+        setNotifOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [notifOpen]);
+
+  const unread = notifications.filter((n) => !n.isRead).length;
+
+  const markRead = async (n: NotificationDto) => {
+    if (!n.isRead) {
+      try {
+        await storeApi.markNotificationRead(n.id);
+        setNotifications((prev) =>
+          prev.map((x) => (x.id === n.id ? { ...x, isRead: true } : x)),
+        );
+      } catch {
+        // ignore
+      }
+    }
+    setNotifOpen(false);
+  };
+
+  const authLinks = isAuthenticated
+    ? ([
+        ...navLinks,
+        { label: "Account", href: "/account" },
+      ] as const)
+    : navLinks;
 
   return (
     <header className="relative z-50 grid shrink-0 grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-4 sm:gap-4 sm:px-6 sm:py-5 md:px-10 md:py-7 lg:gap-6 lg:px-16 lg:py-8">
@@ -36,8 +93,8 @@ export default function SiteHeader() {
         />
       </Link>
 
-      <nav className="hidden items-center justify-end gap-6 pr-4 text-sm text-white/85 md:flex lg:gap-10 lg:pr-6 lg:text-[15px] xl:pr-10">
-        {navLinks.map((link) => (
+      <nav className="hidden items-center justify-end gap-5 pr-4 text-sm text-white/85 md:flex lg:gap-8 lg:pr-6 lg:text-[15px] xl:pr-10">
+        {authLinks.map((link) => (
           <Link
             key={link.href}
             href={link.href}
@@ -68,6 +125,72 @@ export default function SiteHeader() {
           />
         </label>
 
+        {authHydrated && isAuthenticated ? (
+          <div className="relative" ref={notifRef}>
+            <button
+              type="button"
+              aria-label="Thông báo"
+              onClick={() => {
+                setNotifOpen((o) => !o);
+                void loadNotifications();
+              }}
+              className="relative hidden text-white/80 hover:text-white md:inline-flex"
+            >
+              <span className="text-lg leading-none">🔔</span>
+              {unread > 0 ? (
+                <span className="absolute -right-2 -top-2 grid min-h-4 min-w-4 place-items-center rounded-full bg-nike-accent px-1 text-[9px] font-bold text-white">
+                  {unread > 9 ? "9+" : unread}
+                </span>
+              ) : null}
+            </button>
+            {notifOpen ? (
+              <div className="absolute right-0 top-full z-50 mt-2 w-80 max-w-[90vw] rounded-xl border border-white/10 bg-[#1a1a22] p-2 shadow-xl">
+                <p className="px-2 py-1 text-xs font-bold uppercase tracking-wide text-white/40">
+                  Thông báo
+                </p>
+                <ul className="max-h-72 overflow-y-auto">
+                  {notifications.map((n) => (
+                    <li key={n.id}>
+                      {n.orderId ? (
+                        <Link
+                          href={`/orders/${n.orderId}`}
+                          onClick={() => void markRead(n)}
+                          className={`block rounded-lg px-3 py-2 text-sm hover:bg-white/5 ${
+                            n.isRead ? "text-white/50" : "text-white"
+                          }`}
+                        >
+                          <p>{n.message || "Thông báo đơn hàng"}</p>
+                          <p className="mt-0.5 text-[11px] text-white/35">
+                            {n.at ? new Date(n.at).toLocaleString("vi-VN") : ""}
+                          </p>
+                        </Link>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => void markRead(n)}
+                          className={`block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-white/5 ${
+                            n.isRead ? "text-white/50" : "text-white"
+                          }`}
+                        >
+                          <p>{n.message || "Thông báo"}</p>
+                          <p className="mt-0.5 text-[11px] text-white/35">
+                            {n.at ? new Date(n.at).toLocaleString("vi-VN") : ""}
+                          </p>
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                  {!notifications.length ? (
+                    <li className="px-3 py-6 text-center text-sm text-white/45">
+                      Không có thông báo
+                    </li>
+                  ) : null}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
         {authHydrated ? (
           isAuthenticated ? (
             <div className="hidden items-center gap-3 md:flex">
@@ -80,6 +203,12 @@ export default function SiteHeader() {
                   Dashboard
                 </Link>
               ) : null}
+              <Link
+                href="/account"
+                className="text-xs font-semibold text-white/70 hover:text-white"
+              >
+                Account
+              </Link>
               <button
                 type="button"
                 onClick={logout}
@@ -154,7 +283,7 @@ export default function SiteHeader() {
       {menuOpen ? (
         <div className="absolute inset-x-0 top-full border-b border-white/10 bg-[#181820]/95 px-4 py-4 backdrop-blur-md md:hidden">
           <nav className="flex flex-col gap-3">
-            {navLinks.map((link) => (
+            {authLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}

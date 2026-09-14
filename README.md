@@ -51,6 +51,22 @@ npm install
 
 API cần file `backend/api/openiddict.pfx` (không commit). Passphrase khớp `AuthServer:CertificatePassPhrase` trong `appsettings.json`:
 
+**Windows (PowerShell)** — không cần `openssl`:
+
+```powershell
+cd backend/api
+
+$cert = New-SelfSignedCertificate -Subject "CN=ShoeStore OpenIddict" `
+  -KeyAlgorithm RSA -KeyLength 2048 -CertStoreLocation "Cert:\CurrentUser\My" `
+  -NotAfter (Get-Date).AddDays(3650) -KeyExportPolicy Exportable -HashAlgorithm SHA256
+$pass = ConvertTo-SecureString -String "2cbe0f83-e7b2-4bfb-bede-ed58d00ee548" -Force -AsPlainText
+Export-PfxCertificate -Cert $cert -FilePath "openiddict.pfx" -Password $pass
+Remove-Item "Cert:\CurrentUser\My\$($cert.Thumbprint)" -Force
+cd ../..
+```
+
+**macOS / Linux (bash):**
+
 ```bash
 cd backend/api
 

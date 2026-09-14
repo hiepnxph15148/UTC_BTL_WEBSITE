@@ -12,13 +12,12 @@ import { getShoeById, shoes, type ShoeProduct } from "@/data/shoes";
 
 export default function ProductDetailPage() {
   const params = useParams<{ id: string }>();
-  const { addItem, error: cartError } = useCart();
-  const { isAuthenticated } = useAuth();
+  const { addItem } = useCart();
+  const { isAuthenticated, openLoginModal } = useAuth();
   const [shoe, setShoe] = useState<ShoeProduct | null>(
     () => getShoeById(params.id) ?? null,
   );
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [color, setColor] = useState(0);
   const [size, setSize] = useState(0);
   const [added, setAdded] = useState(false);
@@ -33,26 +32,15 @@ export default function ProductDetailPage() {
         if (cancelled) return;
         if (result) {
           setShoe(result.shoe);
-          setLoadError(null);
         } else if (!getShoeById(params.id)) {
           setShoe(null);
-          setLoadError("Không tìm thấy sản phẩm");
         }
       })
-      .catch((err) => {
+      .catch(() => {
         if (cancelled) return;
         const fallback = getShoeById(params.id);
-        if (fallback) {
-          setShoe(fallback);
-          setLoadError(
-            err instanceof Error
-              ? `${err.message} — dùng dữ liệu demo`
-              : "API lỗi — dùng dữ liệu demo",
-          );
-        } else {
-          setShoe(null);
-          setLoadError(err instanceof Error ? err.message : "Không tải được");
-        }
+        if (fallback) setShoe(fallback);
+        else setShoe(null);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -86,6 +74,13 @@ export default function ProductDetailPage() {
   }
 
   const onBuy = async () => {
+    if (!isAuthenticated) {
+      openLoginModal(
+        "Đăng nhập để thêm sản phẩm vào giỏ hàng và đồng bộ với API.",
+      );
+      return;
+    }
+
     setBusy(true);
     try {
       const fail = await addItem({
@@ -95,7 +90,16 @@ export default function ProductDetailPage() {
         colorIndex: color,
         sizeIndex: size,
       });
-      if (fail) return;
+      if (fail) {
+        if (fail === "__NEED_LOGIN__" || /đăng nhập|SKU|login/i.test(fail)) {
+          openLoginModal(
+            "Đăng nhập để thêm sản phẩm vào giỏ hàng và đồng bộ với API.",
+          );
+        } else {
+          window.alert(fail);
+        }
+        return;
+      }
       setAdded(true);
       window.setTimeout(() => setAdded(false), 1600);
     } finally {
@@ -109,22 +113,6 @@ export default function ProductDetailPage() {
       accent={shoe.accent}
       subtitle="Chi tiết sản phẩm — chọn màu, size rồi thêm vào giỏ hàng."
     >
-      {loadError ? (
-        <p className="mb-4 text-sm text-amber-200/80">{loadError}</p>
-      ) : null}
-      {cartError ? (
-        <p className="mb-4 text-sm text-red-200/90">{cartError}</p>
-      ) : null}
-      {!isAuthenticated ? (
-        <p className="mb-4 text-sm text-white/55">
-          Giỏ local khi chưa login.{" "}
-          <Link href="/login" className="text-nike-accent underline">
-            Đăng nhập
-          </Link>{" "}
-          để đồng bộ giỏ API.
-        </p>
-      ) : null}
-
       <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
         <div className="page-card relative overflow-hidden rounded-2xl p-6 sm:p-8">
           <div

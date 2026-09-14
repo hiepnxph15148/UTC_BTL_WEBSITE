@@ -2,12 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import PageShell from "@/components/PageShell";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
-import { formatVnd, storeApi } from "@/lib/api";
+import { formatVnd, storeApi, type QuoteDto } from "@/lib/api";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -18,23 +18,75 @@ export default function CheckoutPage() {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [coupon, setCoupon] = useState("");
+  const [addressId, setAddressId] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
+  const [quoting, setQuoting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState<{ orderId: string; number: string } | null>(
-    null,
-  );
-  const [quoteTotal, setQuoteTotal] = useState<number | null>(null);
-  const [shippingFee, setShippingFee] = useState<number | null>(null);
+  const [quote, setQuote] = useState<QuoteDto | null>(null);
 
-  const displayTotal = quoteTotal ?? total;
-  const displayShipping = shippingFee ?? 0;
-
+  const displayTotal = quote?.total ?? total;
   const grandLabel = useMemo(() => formatVnd(displayTotal), [displayTotal]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    void (async () => {
+      try {
+        const list = await storeApi.getAddresses();
+        const preferred = list.find((a) => a.isDefault) || list[0];
+        if (!preferred) return;
+        setAddressId(preferred.id);
+        setName(preferred.recipient || "");
+        setPhone(preferred.phone || "");
+        setAddress(preferred.fullAddress || "");
+      } catch {
+        // ignore — user có thể nhập mới
+      }
+    })();
+  }, [isAuthenticated]);
+
+  const ensureAddress = useCallback(async () => {
+    if (!name.trim() || !phone.trim() || !address.trim()) {
+      throw new Error("Vui lòng điền đủ họ tên, SĐT và địa chỉ.");
+    }
+    if (addressId) return addressId;
+
+    const created = await storeApi.createAddress({
+      recipient: name.trim(),
+      phone: phone.trim(),
+      fullAddress: address.trim(),
+      isDefault: true,
+    });
+    setAddressId(created.id);
+    return created.id;
+  }, [name, phone, address, addressId]);
+
+  const applyQuote = async () => {
+    if (!isAuthenticated) {
+      router.push(`/login?next=${encodeURIComponent("/checkout")}`);
+      return;
+    }
+    if (!items.length || quoting) return;
+
+    setQuoting(true);
+    setError(null);
+    try {
+      const id = await ensureAddress();
+      const next = await storeApi.quote({
+        addressId: id,
+        coupon: coupon.trim() || null,
+      });
+      setQuote(next);
+    } catch (err) {
+      setQuote(null);
+      setError(err instanceof Error ? err.message : "Không áp dụng được mã");
+    } finally {
+      setQuoting(false);
+    }
+  };
 
   const onPay = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!items.length || paying) return;
-    if (!name.trim() || !phone.trim() || !address.trim()) return;
 
     if (!isAuthenticated) {
       router.push(`/login?next=${encodeURIComponent("/checkout")}`);
@@ -44,33 +96,23 @@ export default function CheckoutPage() {
     setPaying(true);
     setError(null);
     try {
-      const created = await storeApi.createAddress({
-        recipient: name.trim(),
-        phone: phone.trim(),
-        fullAddress: address.trim(),
-        isDefault: true,
-      });
-
-      const quote = await storeApi.quote({
-        addressId: created.id,
+      const id = addressId || (await ensureAddress());
+      const latest = await storeApi.quote({
+        addressId: id,
         coupon: coupon.trim() || null,
       });
-      setQuoteTotal(quote.total);
-      setShippingFee(quote.shippingFee);
+      setQuote(latest);
 
       const idempotencyKey = `web-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
       const order = await storeApi.placeOrder({
-        addressId: created.id,
+        addressId: id,
         coupon: coupon.trim() || null,
-        expectedTotal: quote.total,
+        expectedTotal: latest.total,
         idempotencyKey,
       });
 
       await clearCart();
-      setDone({
-        orderId: order.order.id,
-        number: order.order.number || order.order.id.slice(0, 8),
-      });
+      router.push(`/orders/${order.order.id}?invoice=1`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Đặt hàng thất bại");
     } finally {
@@ -86,43 +128,6 @@ export default function CheckoutPage() {
     );
   }
 
-  if (done) {
-    return (
-      <PageShell
-        title="Payment success"
-        accent="#c6e600"
-        subtitle="Đơn COD đã được tạo trên ShoeStore API."
-      >
-        <div className="page-card mx-auto max-w-lg rounded-2xl p-8 text-center">
-          <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#c6e600]">
-            Success
-          </p>
-          <h2 className="mt-3 text-3xl font-extrabold">
-            Cảm ơn bạn đã mua hàng
-          </h2>
-          <p className="mt-3 text-white/65">
-            Mã đơn:{" "}
-            <span className="font-semibold text-white">{done.number}</span>
-          </p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-            <Link
-              href="/collections"
-              className="rounded-xl bg-nike-accent px-5 py-3 text-sm font-bold text-white"
-            >
-              Tiếp tục mua
-            </Link>
-            <Link
-              href="/cart"
-              className="rounded-xl border border-white/15 px-5 py-3 text-sm font-semibold text-white/75 hover:text-white"
-            >
-              Về giỏ hàng
-            </Link>
-          </div>
-        </div>
-      </PageShell>
-    );
-  }
-
   if (items.length === 0) {
     return (
       <PageShell title="Payment" subtitle="Chưa có sản phẩm để thanh toán.">
@@ -134,6 +139,12 @@ export default function CheckoutPage() {
           >
             Xem Collections
           </Link>
+          <Link
+            href="/orders"
+            className="mt-3 block text-sm text-white/55 underline hover:text-white"
+          >
+            Xem đơn đã đặt
+          </Link>
         </div>
       </PageShell>
     );
@@ -143,7 +154,7 @@ export default function CheckoutPage() {
     <PageShell
       title="Payment"
       accent="#ed3b6b"
-      subtitle="Checkout COD · quote + place-order qua ShoeStore API."
+      subtitle="Checkout COD · áp mã giảm giá rồi đặt hàng."
     >
       {!isAuthenticated ? (
         <div className="mb-5 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
@@ -175,7 +186,11 @@ export default function CheckoutPage() {
                 <input
                   required
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    setAddressId(null);
+                    setQuote(null);
+                  }}
                   placeholder="Nguyen Van A"
                   className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none ring-nike-accent focus:ring-2"
                 />
@@ -187,7 +202,11 @@ export default function CheckoutPage() {
                 <input
                   required
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => {
+                    setPhone(e.target.value);
+                    setAddressId(null);
+                    setQuote(null);
+                  }}
                   placeholder="09xx xxx xxx"
                   className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none ring-nike-accent focus:ring-2"
                 />
@@ -199,26 +218,43 @@ export default function CheckoutPage() {
                 <input
                   required
                   value={address}
-                  onChange={(e) => setAddress(e.target.value)}
+                  onChange={(e) => {
+                    setAddress(e.target.value);
+                    setAddressId(null);
+                    setQuote(null);
+                  }}
                   placeholder="Số nhà, đường, quận/huyện, thành phố"
                   className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none ring-nike-accent focus:ring-2"
                 />
               </label>
-              <label className="block space-y-1.5 sm:col-span-2">
+              <div className="sm:col-span-2">
                 <span className="text-xs font-semibold uppercase tracking-wide text-white/50">
                   Mã giảm giá (tuỳ chọn)
                 </span>
-                <input
-                  value={coupon}
-                  onChange={(e) => setCoupon(e.target.value)}
-                  placeholder="WELCOME"
-                  className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none ring-nike-accent focus:ring-2"
-                />
-              </label>
+                <div className="mt-1.5 flex flex-col gap-2 sm:flex-row">
+                  <input
+                    value={coupon}
+                    onChange={(e) => {
+                      setCoupon(e.target.value);
+                      setQuote(null);
+                    }}
+                    placeholder="WELCOME10"
+                    className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none ring-nike-accent focus:ring-2"
+                  />
+                  <button
+                    type="button"
+                    disabled={quoting || !isAuthenticated}
+                    onClick={() => void applyQuote()}
+                    className="shrink-0 rounded-xl border border-white/15 px-4 py-3 text-sm font-bold text-white/85 hover:bg-white/5 disabled:opacity-50"
+                  >
+                    {quoting ? "Đang tính…" : "Áp dụng / xem trước"}
+                  </button>
+                </div>
+              </div>
             </div>
             <p className="mt-4 text-sm text-white/55">
-              Backend giai đoạn 1 chỉ hỗ trợ COD. Phí ship do API tính (30.000đ,
-              miễn ship từ 1.000.000đ).
+              Chỉ hỗ trợ COD. Phí ship do API tính (30.000đ, miễn từ 1.000.000đ
+              sau giảm).
             </p>
           </section>
         </div>
@@ -226,49 +262,88 @@ export default function CheckoutPage() {
         <aside className="page-card h-fit rounded-2xl p-5 sm:p-6">
           <h2 className="text-xl font-bold">Đơn hàng</h2>
           <div className="mt-4 max-h-64 space-y-3 overflow-y-auto pr-1">
-            {items.map((item) => (
-              <div key={item.id} className="flex items-center gap-3">
-                <div className="flex h-14 w-16 shrink-0 items-center justify-center rounded-lg bg-black/30">
-                  <Image
-                    src={item.hero}
-                    alt=""
-                    width={64}
-                    height={48}
-                    className="h-auto w-[80%] object-contain mix-blend-lighten"
-                  />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold">
-                    {item.name} {item.nameAccent}
-                  </p>
-                  <p className="text-xs text-white/50">
-                    {item.size ? `Size ${item.size} · ` : ""}x{item.qty}
-                  </p>
-                </div>
-                <p className="text-sm font-semibold">
-                  {formatVnd(item.priceValue * item.qty)}
-                </p>
-              </div>
-            ))}
+            {quote?.items?.length
+              ? quote.items.map((line) => (
+                  <div
+                    key={line.skuId}
+                    className="flex items-start justify-between gap-3 text-sm"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-semibold">
+                        {line.productName || line.code}
+                      </p>
+                      <p className="text-xs text-white/50">
+                        {line.code} · x{line.quantity}
+                        {line.discount > 0
+                          ? ` · −${formatVnd(line.discount)}`
+                          : ""}
+                      </p>
+                    </div>
+                    <p className="font-semibold">
+                      {formatVnd(
+                        line.unitPrice * line.quantity - line.discount,
+                      )}
+                    </p>
+                  </div>
+                ))
+              : items.map((item) => (
+                  <div key={item.id} className="flex items-center gap-3">
+                    <div className="flex h-14 w-16 shrink-0 items-center justify-center rounded-lg bg-black/30">
+                      <Image
+                        src={item.hero}
+                        alt=""
+                        width={64}
+                        height={48}
+                        className="h-auto w-[80%] object-contain mix-blend-lighten"
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold">
+                        {item.name} {item.nameAccent}
+                      </p>
+                      <p className="text-xs text-white/50">
+                        {item.size ? `Size ${item.size} · ` : ""}x{item.qty}
+                      </p>
+                    </div>
+                    <p className="text-sm font-semibold">
+                      {formatVnd(item.priceValue * item.qty)}
+                    </p>
+                  </div>
+                ))}
           </div>
 
           <div className="mt-5 space-y-2 border-t border-white/10 pt-4 text-sm text-white/65">
             <div className="flex justify-between">
-              <span>Sản phẩm ({count})</span>
+              <span>Tạm tính ({count})</span>
               <span className="font-semibold text-white">
-                {formatVnd(total)}
+                {formatVnd(quote?.subtotal ?? total)}
               </span>
             </div>
             <div className="flex justify-between">
-              <span>Ship (API)</span>
+              <span>Giảm giá</span>
+              <span className="font-semibold text-[#c6e600]">
+                {quote
+                  ? quote.discount > 0
+                    ? `−${formatVnd(quote.discount)}`
+                    : formatVnd(0)
+                  : "Áp mã để xem"}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span>Ship</span>
               <span className="font-semibold text-white">
-                {shippingFee === null ? "Khi đặt đơn" : formatVnd(displayShipping)}
+                {quote ? formatVnd(quote.shippingFee) : "Khi xem trước"}
               </span>
             </div>
             <div className="flex justify-between text-base text-white">
               <span className="font-bold">Tổng</span>
               <span className="font-extrabold text-nike-accent">{grandLabel}</span>
             </div>
+            {quote && coupon.trim() && quote.discountId ? (
+              <p className="text-xs text-[#c6e600]">
+                Đã áp dụng mã {coupon.trim().toUpperCase()}
+              </p>
+            ) : null}
           </div>
 
           <button

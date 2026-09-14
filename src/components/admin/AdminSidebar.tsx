@@ -25,22 +25,40 @@ const links = [
     match: "prefix" as const,
   },
   {
-    href: "/admin/feedback",
-    label: "Góp ý & phản ánh",
-    icon: "✉",
+    href: "/admin/inventory",
+    label: "Inventory",
+    icon: "▤",
+    match: "prefix" as const,
+  },
+  {
+    href: "/admin/returns",
+    label: "Returns",
+    icon: "↺",
+    match: "prefix" as const,
+  },
+  {
+    href: "/admin/promotions",
+    label: "Promotions",
+    icon: "%",
     match: "prefix" as const,
   },
   {
     href: "/admin/categories",
-    label: "Categories",
+    label: "Lookups",
     icon: "▣",
     match: "categories" as const,
   },
   {
-    href: "/admin/categories/new",
-    label: "Create Category",
-    icon: "+",
-    match: "exact" as const,
+    href: "/admin/users",
+    label: "Users",
+    icon: "☺",
+    match: "prefix" as const,
+  },
+  {
+    href: "/admin/feedback",
+    label: "Góp ý & phản ánh",
+    icon: "✉",
+    match: "prefix" as const,
   },
 ] as const;
 

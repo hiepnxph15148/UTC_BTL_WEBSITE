@@ -168,3 +168,35 @@ body {
     0 24px 60px rgba(0, 0, 0, 0.45),
     0 0 40px rgba(237, 59, 107, 0.12);
 }
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  #invoice,
+  #invoice * {
+    visibility: visible !important;
+  }
+
+  #invoice {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    background: white !important;
+    color: #111 !important;
+    box-shadow: none !important;
+    border: none !important;
+    transform: none !important;
+  }
+
+  #invoice * {
+    color: #111 !important;
+    border-color: #ddd !important;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+}

@@ -209,8 +209,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         if (!sku) {
           const msg = shoe.skus?.length
             ? "Không tìm thấy SKU cho màu/size đã chọn. Hãy chọn lại."
-            : "Sản phẩm chưa có SKU từ API — không thêm được khi đã đăng nhập.";
-          setError(msg);
+            : "__NEED_LOGIN__";
+          if (msg !== "__NEED_LOGIN__") setError(msg);
           return msg;
         }
         if (sku.available < qty) {
@@ -238,10 +238,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
       // Guest — bắt buộc có skuId để sau này merge được
       if (!sku) {
-        const msg =
-          "Sản phẩm chưa có SKU từ API — đăng nhập hoặc chọn sản phẩm từ catalog API.";
-        setError(msg);
-        return msg;
+        // Không setError sticky — UI mở popup đăng nhập
+        return "__NEED_LOGIN__";
       }
 
       const id = sku.id;

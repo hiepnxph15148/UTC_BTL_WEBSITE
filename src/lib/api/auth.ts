@@ -1,4 +1,12 @@
 import { writeAuthSession, type AuthSession } from "./client";
+import type {
+  ChangePasswordInput,
+  ProfileDto,
+  ResetPasswordDto,
+  SendPasswordResetCodeDto,
+  UpdateProfileDto,
+  VerifyPasswordResetTokenInput,
+} from "./types";
 
 export async function loginWithPassword(
   userNameOrEmailAddress: string,
@@ -79,4 +87,53 @@ export async function ensureCsrf(): Promise<void> {
   } catch {
     // ignore — request sau sẽ báo lỗi rõ hơn
   }
+}
+
+export async function getMyProfile() {
+  const { apiFetch } = await import("./client");
+  return apiFetch<ProfileDto>("/api/account/my-profile", { auth: true });
+}
+
+export async function updateMyProfile(input: UpdateProfileDto) {
+  const { apiFetch } = await import("./client");
+  return apiFetch<ProfileDto>("/api/account/my-profile", {
+    method: "PUT",
+    auth: true,
+    json: input,
+  });
+}
+
+export async function changePassword(input: ChangePasswordInput) {
+  const { apiFetch } = await import("./client");
+  return apiFetch<void>("/api/account/my-profile/change-password", {
+    method: "POST",
+    auth: true,
+    json: input,
+  });
+}
+
+export async function sendPasswordResetCode(input: SendPasswordResetCodeDto) {
+  const { apiFetch } = await import("./client");
+  return apiFetch<void>("/api/account/send-password-reset-code", {
+    method: "POST",
+    json: input,
+  });
+}
+
+export async function verifyPasswordResetToken(
+  input: VerifyPasswordResetTokenInput,
+) {
+  const { apiFetch } = await import("./client");
+  return apiFetch<boolean>("/api/account/verify-password-reset-token", {
+    method: "POST",
+    json: input,
+  });
+}
+
+export async function resetPassword(input: ResetPasswordDto) {
+  const { apiFetch } = await import("./client");
+  return apiFetch<void>("/api/account/reset-password", {
+    method: "POST",
+    json: input,
+  });
 }

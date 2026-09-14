@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const apiOrigin =
   process.env.NEXT_PUBLIC_API_ORIGIN?.replace(/\/$/, "") ||
-  "http://localhost:5000";
+  "https://utc-btl-website.onrender.com/";
 
 const nextConfig: NextConfig = {
   // Ẩn badge "N" góc dưới trong chế độ dev

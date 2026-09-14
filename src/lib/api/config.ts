@@ -5,7 +5,7 @@ export const API_BASE_URL =
 /** Origin thật của ShoeStore API (server-side proxy). */
 export const API_ORIGIN =
   process.env.NEXT_PUBLIC_API_ORIGIN?.replace(/\/$/, "") ||
-  "http://localhost:5000";
+  "https://utc-btl-website.onrender.com/";
 
 export const OIDC_CLIENT_ID =
   process.env.NEXT_PUBLIC_OIDC_CLIENT_ID || "ShoeStore_App";

@@ -12,6 +12,7 @@ type State = {
   fromApi: boolean;
 };
 
+/** Catalog hook: API lỗi/rỗng → fallback demo im lặng, không banner. */
 export function useCatalogProducts(options?: {
   categoryId?: string;
   search?: string;
@@ -44,24 +45,19 @@ export function useCatalogProducts(options?: {
         if (cancelled) return;
         setState({
           shoes: list.length ? list : fallback,
-          lookups,
+          lookups: list.length ? lookups : null,
           loading: false,
-          error: list.length
-            ? null
-            : "API trả về danh sách rỗng — dùng dữ liệu demo",
+          error: null,
           fromApi: list.length > 0,
         });
       })
-      .catch((err) => {
+      .catch(() => {
         if (cancelled) return;
         setState({
           shoes: fallback,
           lookups: null,
           loading: false,
-          error:
-            err instanceof Error
-              ? `${err.message} — đang dùng dữ liệu demo`
-              : "Không kết nối được API — đang dùng dữ liệu demo",
+          error: null,
           fromApi: false,
         });
       });
@@ -69,7 +65,6 @@ export function useCatalogProducts(options?: {
     return () => {
       cancelled = true;
     };
-    // fallback is stable module export when defaulted
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categoryId, search, take]);
 

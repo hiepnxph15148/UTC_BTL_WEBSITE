@@ -29,6 +29,10 @@ type AuthContextValue = {
     password: string;
   }) => Promise<void>;
   logout: () => void;
+  loginModalOpen: boolean;
+  loginModalMessage: string | null;
+  openLoginModal: (message?: string) => void;
+  closeLoginModal: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -36,6 +40,10 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [loginModalMessage, setLoginModalMessage] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     const existing = readAuthSession();
@@ -80,6 +88,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
   }, []);
 
+  const openLoginModal = useCallback((message?: string) => {
+    setLoginModalMessage(
+      message || "Đăng nhập để thêm sản phẩm vào giỏ và thanh toán.",
+    );
+    setLoginModalOpen(true);
+  }, []);
+
+  const closeLoginModal = useCallback(() => {
+    setLoginModalOpen(false);
+    setLoginModalMessage(null);
+  }, []);
+
   const value = useMemo(
     () => ({
       session,
@@ -88,8 +108,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       register,
       logout,
+      loginModalOpen,
+      loginModalMessage,
+      openLoginModal,
+      closeLoginModal,
     }),
-    [session, hydrated, login, register, logout],
+    [
+      session,
+      hydrated,
+      login,
+      register,
+      logout,
+      loginModalOpen,
+      loginModalMessage,
+      openLoginModal,
+      closeLoginModal,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

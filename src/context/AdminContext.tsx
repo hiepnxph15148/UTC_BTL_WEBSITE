@@ -303,6 +303,42 @@ export function orderStateLabel(state: number) {
   }
 }
 
+export function paymentStateLabel(state: number) {
+  switch (state) {
+    case 0:
+      return "Unpaid";
+    case 1:
+      return "Collected";
+    case 2:
+      return "Partial refund";
+    case 3:
+      return "Refunded";
+    default:
+      return String(state);
+  }
+}
+
+export function returnStateLabel(state: number) {
+  switch (state) {
+    case 0:
+      return "Requested";
+    case 1:
+      return "Approved";
+    case 2:
+      return "Rejected";
+    case 3:
+      return "Received";
+    case 4:
+      return "Completed";
+    default:
+      return String(state);
+  }
+}
+
+export function returnKindLabel(kind: number) {
+  return kind === 1 ? "Exchange" : "Refund";
+}
+
 export function formatOrderAmount(amount: number) {
   return formatVnd(amount);
 }

@@ -9,23 +9,16 @@ import { useCatalogProducts } from "@/hooks/useCatalogProducts";
 const PREVIEW = 3;
 
 export default function CollectionsPage() {
-  const { shoes, loading, error, fromApi } = useCatalogProducts({ take: 100 });
+  const { shoes, loading } = useCatalogProducts({ take: 100 });
 
   return (
     <PageShell
       title="Collections"
       accent="#3b82f6"
-      subtitle={
-        fromApi
-          ? "Dữ liệu từ GET /api/app/store/products"
-          : "Mỗi mục hiện 3 sản phẩm nổi bật — bấm Show all để xem toàn bộ category."
-      }
+      subtitle="Mỗi mục hiện 3 sản phẩm nổi bật — bấm Show all để xem toàn bộ category."
     >
       {loading ? (
-        <p className="mb-6 text-sm text-white/50">Đang tải sản phẩm từ API…</p>
-      ) : null}
-      {error ? (
-        <p className="mb-6 text-sm text-amber-200/80">{error}</p>
+        <p className="mb-6 text-sm text-white/50">Đang tải…</p>
       ) : null}
 
       <nav className="mb-10 flex flex-wrap gap-2.5">

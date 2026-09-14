@@ -15,13 +15,13 @@ fi
 cd "$API_DIR"
 
 export ASPNETCORE_ENVIRONMENT="${ASPNETCORE_ENVIRONMENT:-Production}"
-export ASPNETCORE_URLS="${ASPNETCORE_URLS:-https://localhost:44322;http://localhost:5000}"
+export ASPNETCORE_URLS="${ASPNETCORE_URLS:-https://localhost:44322;https://utc-btl-website.onrender.com/}"
 export ASPNETCORE_Kestrel__Certificates__Default__Path="$PFX"
 export ASPNETCORE_Kestrel__Certificates__Default__Password="$PASS"
 
 echo "Starting ShoeStore API on:"
 echo "  HTTPS  https://localhost:44322"
-echo "  HTTP   http://localhost:5000  (health UI; token cần HTTPS)"
+echo "  HTTP   https://utc-btl-website.onrender.com/  (health UI; token cần HTTPS)"
 echo
 
 exec dotnet ShoeStore.HttpApi.Host.dll

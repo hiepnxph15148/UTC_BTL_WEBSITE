@@ -8,7 +8,9 @@ import {
   type ICellRendererParams,
 } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
+import Link from "next/link";
 import { useMemo } from "react";
+import { useRouter } from "next/navigation";
 import type { AdminProduct } from "@/lib/admin-store";
 import { parsePrice } from "@/data/shoes";
 
@@ -41,9 +43,12 @@ function ProductCell(props: ICellRendererParams<AdminProduct>) {
         alt=""
         className="h-9 w-12 rounded object-contain bg-black/30"
       />
-      <p className="truncate font-semibold text-white">
+      <Link
+        href={`/admin/products/${p.id}`}
+        className="truncate font-semibold text-white hover:text-[#ed3b6b]"
+      >
         {p.name} {p.nameAccent}
-      </p>
+      </Link>
     </div>
   );
 }
@@ -54,6 +59,7 @@ type Props = {
 };
 
 export default function ProductsGrid({ products, height = 420 }: Props) {
+  const router = useRouter();
   const columnDefs = useMemo<ColDef<AdminProduct>[]>(
     () => [
       {
@@ -140,6 +146,9 @@ export default function ProductsGrid({ products, height = 420 }: Props) {
         paginationPageSize={8}
         paginationPageSizeSelector={[8, 16, 32]}
         getRowId={(p) => p.data.id}
+        onRowClicked={(e) => {
+          if (e.data?.id) router.push(`/admin/products/${e.data.id}`);
+        }}
       />
     </div>
   );

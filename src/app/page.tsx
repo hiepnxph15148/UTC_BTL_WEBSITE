@@ -9,7 +9,7 @@ import SiteHeader from "@/components/SiteHeader";
 import { useHomeCatalog } from "@/hooks/useCatalogProducts";
 
 export default function Home() {
-  const { shoes, loading, error, fromApi } = useHomeCatalog();
+  const { shoes, loading } = useHomeCatalog();
   const displayShoes = useMemo(() => shoes.slice(0, 5), [shoes]);
   const [activeIndex, setActiveIndex] = useState(0);
   const safeIndex = Math.min(activeIndex, Math.max(displayShoes.length - 1, 0));
@@ -38,18 +38,9 @@ export default function Home() {
         <div className="relative z-10 flex min-h-dvh flex-col lg:h-full">
           <SiteHeader />
 
-          {error ? (
-            <p className="px-4 text-center text-xs text-amber-200/80 sm:px-6 md:px-10 lg:px-16">
-              {fromApi ? error : error}
-              {loading ? " · Đang tải…" : ""}
-            </p>
-          ) : loading ? (
+          {loading ? (
             <p className="px-4 text-center text-xs text-white/45 sm:px-6 md:px-10 lg:px-16">
-              Đang tải catalog từ API…
-            </p>
-          ) : fromApi ? (
-            <p className="px-4 text-center text-xs text-emerald-300/70 sm:px-6 md:px-10 lg:px-16">
-              Catalog từ ShoeStore API
+              Đang tải…
             </p>
           ) : null}
 

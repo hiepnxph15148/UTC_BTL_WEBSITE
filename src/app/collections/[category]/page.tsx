@@ -19,7 +19,7 @@ export default function CategoryCollectionPage() {
   if (!validIds.has(category as ShoeCategory)) notFound();
 
   const cat = categorySections.find((c) => c.id === category)!;
-  const { shoes, loading, error } = useCatalogProducts({ take: 100 });
+  const { shoes, loading } = useCatalogProducts({ take: 100 });
   const list = shoes.filter((shoe) => shoe.category === cat.id);
 
   return (
@@ -31,7 +31,6 @@ export default function CategoryCollectionPage() {
       {loading ? (
         <p className="mb-4 text-sm text-white/50">Đang tải…</p>
       ) : null}
-      {error ? <p className="mb-4 text-sm text-amber-200/80">{error}</p> : null}
 
       <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
         <Link
