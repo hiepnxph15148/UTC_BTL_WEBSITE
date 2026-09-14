@@ -1,15 +1,15 @@
 # Render Blueprint — ShoeStore API + Postgres
-# Docs: https://render.com/docs/blueprint-spec
+# https://render.com/docs/blueprint-spec
 #
-# Sau khi merge/push: Render Dashboard → New → Blueprint → chọn repo này.
-# Hoặc: https://dashboard.render.com/select-repo?type=blueprint
+# New → Blueprint → repo fork → branch develop → path render.yaml
 
 databases:
   - name: shoestore-db
     plan: free
+    # Cùng region với web — lệch region khiến API không nối được DB (deploy fail)
+    region: oregon
     databaseName: shoestore
     user: shoestore
-    # Dump local là Postgres 17 — nếu restore lỗi version, dùng Neon PG17 (xem RENDER.md)
     postgresMajorVersion: "16"
 
 services:
@@ -17,21 +17,25 @@ services:
     name: shoestore-api
     runtime: docker
     plan: free
-    region: singapore
+    region: oregon
     dockerfilePath: ./backend/api/Dockerfile
     dockerContext: ./backend/api
-    healthCheckPath: /health-status
-    # Free tier sleep khi idle — cold start .NET có thể 1–2 phút
+    # Tắt health check lúc đầu: DB trống / cold start dễ fail deploy.
+    # Bật lại /health-status sau khi restore dump.
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
         value: Production
       - key: DOTNET_EnableDiagnostics
         value: "0"
+      # Free tier 512MB — giảm áp lực GC
+      - key: DOTNET_GCServer
+        value: "0"
+      - key: DOTNET_GCConserveMemory
+        value: "9"
       - key: ConnectionStrings__Default
         fromDatabase:
           name: shoestore-db
           property: connectionString
-      # Đổi domain nếu Render gán tên khác (Settings → service URL)
       - key: App__SelfUrl
         value: https://shoestore-api.onrender.com
       - key: AuthServer__Authority

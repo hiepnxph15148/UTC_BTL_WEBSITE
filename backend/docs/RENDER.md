@@ -82,9 +82,11 @@ Redeploy frontend.
 | `AuthServer__Authority` | Cùng URL public |
 | `AuthServer__RequireHttpsMetadata` | `false` (TLS terminate ở Render edge) |
 
-## Troubleshoot
+## Troubleshoot deploy fail
 
-- **Build fail / .NET 10 image**: image `mcr.microsoft.com/dotnet/aspnet:10.0` phải kéo được.
-- **Health check fail**: đợi cold start; xem Logs trên Render.
-- **Login/giỏ từ Vercel 502**: sai `NEXT_PUBLIC_API_ORIGIN` hoặc API sleep/crash.
-- **CSRF / Found**: đã xử lý qua proxy Next; cần redeploy web sau khi API sống.
+1. **Logs** (Render → `shoestore-api` → Logs): gửi đoạn đỏ / `OutOfMemory` / `relation Abp` / `Connection refused`.
+2. **DB trống**: restore dump ngay sau khi service Up (xem mục 3). Không restore thì API có thể crash.
+3. **Fork cũ**: GitHub fork → **Sync fork** rồi Manual Deploy.
+4. **Trùng tên**: xóa Blueprint/services fail cũ (`shoestore-api`, `shoestore-db`) rồi tạo Blueprint mới.
+5. **OOM (512MB free)**: ABP nặng — nếu log `OutOfMemory`, cần nâng plan Starter ($7) hoặc host VPS.
+6. **Sai URL SelfUrl**: sau khi có URL thật (`xxx.onrender.com`), sửa `App__SelfUrl` + `AuthServer__Authority` cho khớp.

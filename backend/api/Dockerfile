@@ -9,7 +9,6 @@ WORKDIR /app
 
 COPY . /app/
 
-# Không copy secrets từ máy local; tạo PFX lúc start nếu thiếu
 COPY docker-entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh \
   && mkdir -p /app/Logs /app/App_Data/ProductImages \
@@ -18,11 +17,11 @@ RUN chmod +x /entrypoint.sh \
 ENV ASPNETCORE_ENVIRONMENT=Production \
     ASPNETCORE_URLS=http://0.0.0.0:8080 \
     DOTNET_EnableDiagnostics=0 \
+    DOTNET_GCServer=0 \
+    DOTNET_GCConserveMemory=9 \
     AuthServer__CertificatePassPhrase=2cbe0f83-e7b2-4bfb-bede-ed58d00ee548
 
 EXPOSE 8080
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=5 \
-  CMD curl -fsS "http://127.0.0.1:${PORT:-8080}/health-status" || exit 1
-
+# Render dùng healthCheckPath riêng; không dùng Docker HEALTHCHECK (dễ fail lúc start)
 ENTRYPOINT ["/entrypoint.sh"]
