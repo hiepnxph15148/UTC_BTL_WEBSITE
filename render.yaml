@@ -1,0 +1,48 @@
+# Render Blueprint — ShoeStore API + Postgres
+# https://render.com/docs/blueprint-spec
+#
+# New → Blueprint → repo fork → branch develop → path render.yaml
+
+databases:
+  - name: shoestore-db
+    plan: free
+    # Cùng region với web — lệch region khiến API không nối được DB (deploy fail)
+    region: oregon
+    databaseName: shoestore
+    user: shoestore
+    postgresMajorVersion: "16"
+
+services:
+  - type: web
+    name: shoestore-api
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./backend/api/Dockerfile
+    dockerContext: ./backend/api
+    # Tắt health check lúc đầu: DB trống / cold start dễ fail deploy.
+    # Bật lại /health-status sau khi restore dump.
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: DOTNET_EnableDiagnostics
+        value: "0"
+      # Free tier 512MB — giảm áp lực GC
+      - key: DOTNET_GCServer
+        value: "0"
+      - key: DOTNET_GCConserveMemory
+        value: "9"
+      - key: ConnectionStrings__Default
+        fromDatabase:
+          name: shoestore-db
+          property: connectionString
+      - key: App__SelfUrl
+        value: https://shoestore-api.onrender.com
+      - key: AuthServer__Authority
+        value: https://shoestore-api.onrender.com
+      - key: AuthServer__RequireHttpsMetadata
+        value: "false"
+      - key: AuthServer__CertificatePassPhrase
+        value: 2cbe0f83-e7b2-4bfb-bede-ed58d00ee548
+      - key: StringEncryption__DefaultPassPhrase
+        value: YqRngVpyXMlauwff

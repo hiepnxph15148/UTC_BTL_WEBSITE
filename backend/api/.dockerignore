@@ -1,0 +1,8 @@
+Logs/
+App_Data/
+*.pdb
+appsettings.secrets.json
+openiddict.pfx
+.git
+.gitignore
+*.md

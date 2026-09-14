@@ -207,14 +207,15 @@ Không cần password grant OpenIddict / HTTPS cho login web local.
 
 ## Deploy
 
-**Vercel (chỉ web):** build Next.js từ git. Cần API host riêng, set env ví dụ:
+**Vercel (chỉ web):** build Next.js từ git.
 
 ```env
-NEXT_PUBLIC_API_BASE_URL=https://your-api.example.com
-NEXT_PUBLIC_API_ORIGIN=https://your-api.example.com
+NEXT_PUBLIC_API_BASE_URL=/api/abp
+NEXT_PUBLIC_API_ORIGIN=https://shoestore-api.onrender.com
 ```
 
-(Production có thể dùng Bearer/OIDC thay cookie proxy local.)
+**Backend trên Render (free):** xem [backend/docs/RENDER.md](backend/docs/RENDER.md)  
+Blueprint: `render.yaml` → New → Blueprint trên [dashboard.render.com](https://dashboard.render.com).
 
 **Backend:** Azure / Railway / Render / VPS + Docker — **không** chạy trên Vercel.
 
