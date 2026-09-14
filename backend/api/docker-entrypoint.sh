@@ -5,24 +5,11 @@ PORT="${PORT:-8080}"
 export ASPNETCORE_URLS="http://0.0.0.0:${PORT}"
 
 PFX="/app/openiddict.pfx"
-PASS="${AuthServer__CertificatePassPhrase:-2cbe0f83-e7b2-4bfb-bede-ed58d00ee548}"
-
 if [ ! -f "$PFX" ]; then
-  echo "[entrypoint] Generating openiddict.pfx..."
-  openssl req -x509 -newkey rsa:2048 \
-    -keyout /tmp/shoestore-openid-key.pem \
-    -out /tmp/shoestore-openid-cert.pem \
-    -days 3650 -nodes \
-    -subj "/CN=ShoeStore OpenIddict"
-  openssl pkcs12 -export \
-    -out "$PFX" \
-    -inkey /tmp/shoestore-openid-key.pem \
-    -in /tmp/shoestore-openid-cert.pem \
-    -passout "pass:${PASS}"
-  rm -f /tmp/shoestore-openid-key.pem /tmp/shoestore-openid-cert.pem
+  echo "[entrypoint] ERROR: openiddict.pfx missing (image must include openiddict.deploy.pfx)."
+  exit 1
 fi
 
-# Render thường cấp postgres:// URI — bổ sung SSL cho Npgsql nếu thiếu
 CS="${ConnectionStrings__Default:-}"
 if [ -n "$CS" ]; then
   case "$CS" in
@@ -32,13 +19,12 @@ if [ -n "$CS" ]; then
         *)
           sep='?'
           case "$CS" in *\?* ) sep='&' ;; esac
-          CS="${CS}${sep}sslmode=require"
-          export ConnectionStrings__Default="$CS"
+          export ConnectionStrings__Default="${CS}${sep}sslmode=require"
           ;;
       esac
       ;;
   esac
-  echo "[entrypoint] DB connection string is set (host hidden)."
+  echo "[entrypoint] DB connection string is set."
 else
   echo "[entrypoint] WARN: ConnectionStrings__Default is empty."
 fi

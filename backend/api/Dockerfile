@@ -1,10 +1,6 @@
 # Published ShoeStore API (.NET 10) — deploy lên Render / Docker
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends openssl curl \
-  && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /app
 
 COPY . /app/
@@ -12,7 +8,9 @@ COPY . /app/
 COPY docker-entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh \
   && mkdir -p /app/Logs /app/App_Data/ProductImages \
-  && rm -f /app/appsettings.secrets.json /app/openiddict.pfx || true
+  && rm -f /app/appsettings.secrets.json \
+  && if [ -f /app/openiddict.deploy.pfx ]; then cp /app/openiddict.deploy.pfx /app/openiddict.pfx; fi \
+  && rm -f /app/openiddict.deploy.pfx
 
 ENV ASPNETCORE_ENVIRONMENT=Production \
     ASPNETCORE_URLS=http://0.0.0.0:8080 \
@@ -23,5 +21,4 @@ ENV ASPNETCORE_ENVIRONMENT=Production \
 
 EXPOSE 8080
 
-# Render dùng healthCheckPath riêng; không dùng Docker HEALTHCHECK (dễ fail lúc start)
 ENTRYPOINT ["/entrypoint.sh"]
