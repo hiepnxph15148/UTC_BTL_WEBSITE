@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useLocale } from "@/context/LocaleContext";
 import { ApiError } from "@/lib/api";
 
 export default function LoginModal() {
@@ -13,6 +14,7 @@ export default function LoginModal() {
     register,
     isAuthenticated,
   } = useAuth();
+  const { t } = useLocale();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [userName, setUserName] = useState("");
   const [email, setEmail] = useState("");
@@ -65,7 +67,7 @@ export default function LoginModal() {
           ? err.message
           : err instanceof Error
             ? err.message
-            : "Đăng nhập thất bại",
+            : t("login.fail"),
       );
     } finally {
       setBusy(false);
@@ -90,21 +92,20 @@ export default function LoginModal() {
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/40">
-              Bắt buộc
+              {t("common.required")}
             </p>
             <h2 id="login-modal-title" className="mt-1 text-2xl font-extrabold">
-              {mode === "login" ? "Đăng nhập" : "Đăng ký"}
+              {mode === "login" ? t("common.login") : t("common.register")}
             </h2>
             <p className="mt-2 text-sm text-white/60">
-              {loginModalMessage ||
-                "Đăng nhập để thêm sản phẩm vào giỏ và đồng bộ với API."}
+              {loginModalMessage || t("login.modalDefault")}
             </p>
           </div>
           <button
             type="button"
             onClick={closeLoginModal}
             className="rounded-lg border border-white/15 px-2.5 py-1 text-sm text-white/60 hover:text-white"
-            aria-label="Đóng"
+            aria-label={t("common.close")}
           >
             ✕
           </button>
@@ -118,7 +119,7 @@ export default function LoginModal() {
 
         <label className="block space-y-1.5">
           <span className="text-xs font-semibold uppercase tracking-wide text-white/50">
-            Username
+            {t("common.username")}
           </span>
           <input
             required
@@ -132,7 +133,7 @@ export default function LoginModal() {
         {mode === "register" ? (
           <label className="block space-y-1.5">
             <span className="text-xs font-semibold uppercase tracking-wide text-white/50">
-              Email
+              {t("common.email")}
             </span>
             <input
               required
@@ -146,7 +147,7 @@ export default function LoginModal() {
 
         <label className="block space-y-1.5">
           <span className="text-xs font-semibold uppercase tracking-wide text-white/50">
-            Password
+            {t("common.password")}
           </span>
           <input
             required
@@ -163,10 +164,10 @@ export default function LoginModal() {
           className="w-full rounded-xl bg-nike-accent py-3 text-sm font-bold text-white disabled:opacity-70"
         >
           {busy
-            ? "Đang xử lý…"
+            ? t("common.processing")
             : mode === "login"
-              ? "Đăng nhập"
-              : "Tạo tài khoản"}
+              ? t("common.login")
+              : t("login.create")}
         </button>
 
         <button
@@ -174,9 +175,7 @@ export default function LoginModal() {
           onClick={() => setMode((m) => (m === "login" ? "register" : "login"))}
           className="w-full text-sm text-white/60 hover:text-white"
         >
-          {mode === "login"
-            ? "Chưa có tài khoản? Đăng ký"
-            : "Đã có tài khoản? Đăng nhập"}
+          {mode === "login" ? t("login.needAccount") : t("login.hasAccount")}
         </button>
       </form>
     </div>

@@ -1,41 +1,45 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import PageShell from "@/components/PageShell";
+import { useLocale } from "@/context/LocaleContext";
 import { shoes } from "@/data/shoes";
 
-const offers = [
-  {
-    id: "flash",
-    badge: "-20%",
-    title: "Flash Sale Air Max",
-    desc: "Giảm 20% toàn bộ dòng Air Max trong tuần này.",
-    shoe: shoes[1],
-    glow: "#c8102e",
-  },
-  {
-    id: "bundle",
-    badge: "2 for $300",
-    title: "Combo Impact",
-    desc: "Mua 2 đôi Impact / Air Max Impact với giá ưu đãi.",
-    shoe: shoes[0],
-    glow: "#ed3b6b",
-  },
-  {
-    id: "member",
-    badge: "Member",
-    title: "Ưu đãi thành viên",
-    desc: "Free ship + đổi size trong 30 ngày cho member Nike.",
-    shoe: shoes[3],
-    glow: "#c6e600",
-  },
-];
-
 export default function OffersPage() {
+  const { t } = useLocale();
+  const offers = [
+    {
+      id: "flash",
+      badge: "-20%",
+      title: t("offers.flashTitle"),
+      desc: t("offers.flashDesc"),
+      shoe: shoes[1],
+      glow: "#c8102e",
+    },
+    {
+      id: "bundle",
+      badge: "2 for $300",
+      title: t("offers.bundleTitle"),
+      desc: t("offers.bundleDesc"),
+      shoe: shoes[0],
+      glow: "#ed3b6b",
+    },
+    {
+      id: "member",
+      badge: "Member",
+      title: t("offers.memberTitle"),
+      desc: t("offers.memberDesc"),
+      shoe: shoes[3],
+      glow: "#c6e600",
+    },
+  ];
+
   return (
     <PageShell
-      title="Offers"
+      title={t("offers.title")}
       accent="#ed3b6b"
-      subtitle="Các ưu đãi đang chạy — chọn deal rồi quay lại Home để xem chi tiết sản phẩm."
+      subtitle={t("offers.subtitle")}
     >
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {offers.map((offer, index) => (
@@ -78,7 +82,7 @@ export default function OffersPage() {
                   background: `linear-gradient(90deg, ${offer.glow}, #ff6b95)`,
                 }}
               >
-                Shop now
+                {t("offers.shopNow")}
               </Link>
             </div>
           </article>

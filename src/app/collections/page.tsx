@@ -5,20 +5,23 @@ import PageShell from "@/components/PageShell";
 import ShoeCard from "@/components/ShoeCard";
 import { categorySections, type ShoeCategory } from "@/data/shoes";
 import { useCatalogProducts } from "@/hooks/useCatalogProducts";
+import { useLocale } from "@/context/LocaleContext";
+import { categoryBlurbKey, categoryLabelKey } from "@/i18n/messages";
 
 const PREVIEW = 3;
 
 export default function CollectionsPage() {
   const { shoes, loading } = useCatalogProducts({ take: 100 });
+  const { t } = useLocale();
 
   return (
     <PageShell
-      title="Collections"
+      title={t("collections.title")}
       accent="#3b82f6"
-      subtitle="Mỗi mục hiện 3 sản phẩm nổi bật — bấm Show all để xem toàn bộ category."
+      subtitle={t("collections.subtitle")}
     >
       {loading ? (
-        <p className="mb-6 text-sm text-white/50">Đang tải…</p>
+        <p className="mb-6 text-sm text-white/50">{t("common.loading")}</p>
       ) : null}
 
       <nav className="mb-10 flex flex-wrap gap-2.5">
@@ -29,7 +32,7 @@ export default function CollectionsPage() {
             className="rounded-full border border-white/15 bg-white/[0.04] px-4 py-2 text-sm font-semibold text-white/75 transition-colors hover:border-white/35 hover:text-white"
             style={{ boxShadow: `inset 0 -2px 0 ${cat.accent}66` }}
           >
-            {cat.label}
+            {t(categoryLabelKey(cat.id))}
           </a>
         ))}
       </nav>
@@ -52,13 +55,13 @@ export default function CollectionsPage() {
                       style={{ background: cat.accent }}
                     />
                     <h2 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">
-                      {cat.label}
+                      {t(categoryLabelKey(cat.id))}
                     </h2>
                   </div>
                   <p className="text-sm text-white/60">
-                    {cat.blurb}
+                    {t(categoryBlurbKey(cat.id))}
                     {" · "}
-                    {all.length} sản phẩm
+                    {t("collections.count", { count: all.length })}
                   </p>
                 </div>
 
@@ -69,7 +72,7 @@ export default function CollectionsPage() {
                     background: `linear-gradient(90deg, ${cat.accent}, #6366f1)`,
                   }}
                 >
-                  Show all
+                  {t("collections.showAll")}
                   <span aria-hidden>→</span>
                 </Link>
               </div>
@@ -82,13 +85,13 @@ export default function CollectionsPage() {
 
               {hasMore ? (
                 <p className="mt-4 text-center text-sm text-white/50 sm:text-left">
-                  +{all.length - PREVIEW} sản phẩm nữa trong mục này —{" "}
+                  {t("collections.more", { count: all.length - PREVIEW })}{" "}
                   <Link
                     href={`/collections/${cat.id}`}
                     className="font-semibold underline-offset-2 hover:underline"
                     style={{ color: cat.accent }}
                   >
-                    xem tất cả
+                    {t("collections.seeAll")}
                   </Link>
                 </p>
               ) : null}

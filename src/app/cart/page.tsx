@@ -5,6 +5,7 @@ import Link from "next/link";
 import PageShell from "@/components/PageShell";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
+import { useLocale } from "@/context/LocaleContext";
 import { formatVnd } from "@/lib/api";
 
 export default function CartPage() {
@@ -20,19 +21,20 @@ export default function CartPage() {
     error,
   } = useCart();
   const { isAuthenticated, session } = useAuth();
+  const { t } = useLocale();
 
   return (
     <PageShell
-      title="Cart"
+      title={t("cart.title")}
       accent="#ed3b6b"
       subtitle={
         isAuthenticated
-          ? `Giỏ của ${session?.userName || "tài khoản"} · đồng bộ API`
-          : "Chưa đăng nhập · giỏ tạm trên máy (sẽ gộp vào account khi login)"
+          ? t("cart.subtitleAuth", { name: session?.userName || "account" })
+          : t("cart.subtitleGuest")
       }
     >
       {!hydrated ? (
-        <p className="text-white/60">Đang tải giỏ hàng...</p>
+        <p className="text-white/60">{t("cart.loading")}</p>
       ) : (
         <>
           {error ? (
@@ -41,24 +43,24 @@ export default function CartPage() {
             </p>
           ) : null}
           {syncing ? (
-            <p className="mb-3 text-xs text-white/45">Đang đồng bộ giỏ…</p>
+            <p className="mb-3 text-xs text-white/45">{t("cart.syncing")}</p>
           ) : null}
           {!isAuthenticated && items.length > 0 ? (
             <p className="mb-4 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/65">
               <Link href="/login?next=/cart" className="font-semibold text-nike-accent underline">
-                Đăng nhập
+                {t("common.login")}
               </Link>{" "}
-              để lưu giỏ theo tài khoản và thanh toán.
+              {t("cart.loginToSave")}
             </p>
           ) : null}
           {items.length === 0 ? (
         <div className="page-card rounded-2xl p-8 text-center">
-          <p className="text-lg text-white/70">Giỏ hàng đang trống.</p>
+          <p className="text-lg text-white/70">{t("cart.empty")}</p>
           <Link
             href="/collections"
             className="mt-5 inline-flex rounded-xl bg-nike-accent px-5 py-3 text-sm font-bold text-white"
           >
-            Xem Collections
+            {t("cart.viewCollections")}
           </Link>
         </div>
       ) : (
@@ -99,7 +101,7 @@ export default function CartPage() {
                         type="button"
                         className="h-9 w-9 cursor-pointer text-lg"
                         onClick={() => void updateQty(item.id, item.qty - 1)}
-                        aria-label="Giảm số lượng"
+                        aria-label={t("cart.decrease")}
                       >
                         −
                       </button>
@@ -110,7 +112,7 @@ export default function CartPage() {
                         type="button"
                         className="h-9 w-9 cursor-pointer text-lg"
                         onClick={() => void updateQty(item.id, item.qty + 1)}
-                        aria-label="Tăng số lượng"
+                        aria-label={t("cart.increase")}
                       >
                         +
                       </button>
@@ -120,7 +122,7 @@ export default function CartPage() {
                       onClick={() => void removeItem(item.id)}
                       className="cursor-pointer text-sm text-white/55 underline hover:text-white"
                     >
-                      Xóa
+                      {t("cart.remove")}
                     </button>
                   </div>
                 </div>
@@ -129,14 +131,14 @@ export default function CartPage() {
           </div>
 
           <aside className="page-card h-fit rounded-2xl p-6">
-            <h3 className="text-xl font-bold">Tóm tắt</h3>
+            <h3 className="text-xl font-bold">{t("cart.summary")}</h3>
             <div className="mt-4 space-y-2 text-sm text-white/70">
               <div className="flex justify-between">
-                <span>Số lượng</span>
+                <span>{t("cart.qty")}</span>
                 <span className="font-semibold text-white">{count}</span>
               </div>
               <div className="flex justify-between">
-                <span>Tạm tính</span>
+                <span>{t("cart.subtotal")}</span>
                 <span className="font-semibold text-white">
                   {formatVnd(total)}
                 </span>
@@ -146,20 +148,20 @@ export default function CartPage() {
               href="/checkout"
               className="mt-6 flex w-full cursor-pointer items-center justify-center rounded-xl bg-gradient-to-r from-nike-accent to-[#ff6b95] py-3 text-sm font-bold tracking-wide text-white"
             >
-              Checkout
+              {t("cart.checkout")}
             </Link>
             <button
               type="button"
               onClick={() => void clearCart()}
               className="mt-3 w-full cursor-pointer rounded-xl border border-white/15 py-3 text-sm text-white/70 hover:text-white"
             >
-              Xóa giỏ hàng
+              {t("cart.clear")}
             </button>
             <Link
               href="/collections"
               className="mt-4 block text-center text-sm text-white/60 underline hover:text-white"
             >
-              Tiếp tục mua sắm
+              {t("cart.continue")}
             </Link>
           </aside>
         </div>

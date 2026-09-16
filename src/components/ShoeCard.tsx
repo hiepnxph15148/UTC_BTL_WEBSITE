@@ -1,5 +1,8 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useLocale } from "@/context/LocaleContext";
 import type { ShoeProduct } from "@/data/shoes";
 
 type Props = {
@@ -15,6 +18,8 @@ export default function ShoeCard({
   showCategory = false,
   categoryLabel,
 }: Props) {
+  const { t } = useLocale();
+
   return (
     <Link
       href={`/product/${shoe.id}`}
@@ -64,7 +69,7 @@ export default function ShoeCard({
             background: `linear-gradient(90deg, ${shoe.accent}, #ff6b95)`,
           }}
         >
-          View
+          {t("common.view")}
         </span>
       </div>
     </Link>

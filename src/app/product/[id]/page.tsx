@@ -7,13 +7,16 @@ import { useEffect, useMemo, useState } from "react";
 import PageShell from "@/components/PageShell";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
+import { useLocale } from "@/context/LocaleContext";
 import { fetchCatalogProduct } from "@/lib/api";
 import { getShoeById, shoes, type ShoeProduct } from "@/data/shoes";
+import { categoryLabelKey } from "@/i18n/messages";
 
 export default function ProductDetailPage() {
   const params = useParams<{ id: string }>();
   const { addItem } = useCart();
   const { isAuthenticated, openLoginModal } = useAuth();
+  const { t } = useLocale();
   const [shoe, setShoe] = useState<ShoeProduct | null>(
     () => getShoeById(params.id) ?? null,
   );
@@ -67,17 +70,15 @@ export default function ProductDetailPage() {
   if (!loading && !shoe) notFound();
   if (!shoe) {
     return (
-      <PageShell title="Product" subtitle="Đang tải…">
-        <p className="text-white/60">Loading…</p>
+      <PageShell title="Product" subtitle={t("common.loading")}>
+        <p className="text-white/60">{t("common.loading")}</p>
       </PageShell>
     );
   }
 
   const onBuy = async () => {
     if (!isAuthenticated) {
-      openLoginModal(
-        "Đăng nhập để thêm sản phẩm vào giỏ hàng và đồng bộ với API.",
-      );
+      openLoginModal(t("product.needLogin"));
       return;
     }
 
@@ -92,9 +93,7 @@ export default function ProductDetailPage() {
       });
       if (fail) {
         if (fail === "__NEED_LOGIN__" || /đăng nhập|SKU|login/i.test(fail)) {
-          openLoginModal(
-            "Đăng nhập để thêm sản phẩm vào giỏ hàng và đồng bộ với API.",
-          );
+          openLoginModal(t("product.needLogin"));
         } else {
           window.alert(fail);
         }
@@ -111,7 +110,7 @@ export default function ProductDetailPage() {
     <PageShell
       title={`${shoe.name} ${shoe.nameAccent}`}
       accent={shoe.accent}
-      subtitle="Chi tiết sản phẩm — chọn màu, size rồi thêm vào giỏ hàng."
+      subtitle={t("product.subtitle")}
     >
       <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
         <div className="page-card relative overflow-hidden rounded-2xl p-6 sm:p-8">
@@ -151,7 +150,7 @@ export default function ProductDetailPage() {
                 <button
                   key={`${shoe.id}-thumb-${index}`}
                   type="button"
-                  aria-label={`Xem ảnh ${index + 1}`}
+                  aria-label={t("product.viewImage", { n: index + 1 })}
                   aria-pressed={isActive}
                   onClick={() => setActiveView(index)}
                   className={`flex h-24 cursor-pointer items-center justify-center rounded-xl border bg-black/30 transition-all ${
@@ -176,7 +175,7 @@ export default function ProductDetailPage() {
 
         <div className="page-card rounded-2xl p-6 sm:p-7">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-white/50">
-            {shoe.category}
+            {t(categoryLabelKey(shoe.category))}
           </p>
           <h2 className="mt-2 font-display text-3xl font-extrabold">
             {shoe.name}{" "}
@@ -188,7 +187,7 @@ export default function ProductDetailPage() {
           ) : null}
 
           <div className="mt-8">
-            <p className="text-sm font-semibold">Colors</p>
+            <p className="text-sm font-semibold">{t("product.colors")}</p>
             <div className="mt-3 flex gap-3">
               {shoe.colors.map((value, index) => (
                 <button
@@ -208,7 +207,7 @@ export default function ProductDetailPage() {
           </div>
 
           <div className="mt-6">
-            <p className="text-sm font-semibold">Size</p>
+            <p className="text-sm font-semibold">{t("product.size")}</p>
             <div className="mt-3 flex flex-wrap gap-3">
               {shoe.sizes.map((value, index) => (
                 <button
@@ -240,20 +239,24 @@ export default function ProductDetailPage() {
                   : `linear-gradient(90deg, ${shoe.accent}, #ff6b95)`,
               }}
             >
-              {added ? "ADDED TO CART" : busy ? "ADDING…" : "BUY"}
+              {added
+                ? t("product.addedCart")
+                : busy
+                  ? t("product.adding")
+                  : t("product.buy")}
             </button>
             <Link
               href="/cart"
               className="rounded-xl border border-white/20 px-6 py-3 text-sm font-semibold text-white/85 transition-colors hover:border-white/40 hover:text-white"
             >
-              View cart
+              {t("product.viewCart")}
             </Link>
           </div>
         </div>
       </div>
 
       <div className="mt-10">
-        <h3 className="font-display text-2xl font-bold">Related</h3>
+        <h3 className="font-display text-2xl font-bold">{t("product.related")}</h3>
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
           {related.map((item) => (
             <Link

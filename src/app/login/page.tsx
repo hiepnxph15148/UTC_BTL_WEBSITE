@@ -5,10 +5,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useEffect, useState } from "react";
 import PageShell from "@/components/PageShell";
 import { useAuth } from "@/context/AuthContext";
+import { useLocale } from "@/context/LocaleContext";
 import { ApiError } from "@/lib/api";
 
 function resolveAfterLogin(userName: string, nextParam: string | null) {
-  // Nếu đang checkout/cart… thì giữ next
   if (nextParam && nextParam !== "/") return nextParam;
   const name = userName.trim().toLowerCase();
   if (name === "admin" || name === "store-manager") return "/admin";
@@ -20,6 +20,7 @@ function LoginForm() {
   const params = useSearchParams();
   const nextParam = params.get("next");
   const { login, register, isAuthenticated, session } = useAuth();
+  const { t } = useLocale();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [userName, setUserName] = useState("");
   const [email, setEmail] = useState("");
@@ -55,7 +56,7 @@ function LoginForm() {
           ? err.message
           : err instanceof Error
             ? err.message
-            : "Đăng nhập thất bại";
+            : t("login.fail");
       setError(message);
     } finally {
       setBusy(false);
@@ -64,9 +65,9 @@ function LoginForm() {
 
   return (
     <PageShell
-      title={mode === "login" ? "Đăng nhập" : "Đăng ký"}
+      title={mode === "login" ? t("common.login") : t("common.register")}
       accent="#ed3b6b"
-      subtitle="Admin vào /admin · khách vào store. Giỏ/checkout cần đăng nhập."
+      subtitle={t("login.subtitle")}
     >
       <form
         onSubmit={onSubmit}
@@ -80,7 +81,7 @@ function LoginForm() {
 
         <label className="block space-y-1.5">
           <span className="text-xs font-semibold uppercase tracking-wide text-white/50">
-            Username
+            {t("common.username")}
           </span>
           <input
             required
@@ -93,7 +94,7 @@ function LoginForm() {
         {mode === "register" ? (
           <label className="block space-y-1.5">
             <span className="text-xs font-semibold uppercase tracking-wide text-white/50">
-              Email
+              {t("common.email")}
             </span>
             <input
               required
@@ -107,7 +108,7 @@ function LoginForm() {
 
         <label className="block space-y-1.5">
           <span className="text-xs font-semibold uppercase tracking-wide text-white/50">
-            Password
+            {t("common.password")}
           </span>
           <input
             required
@@ -123,7 +124,11 @@ function LoginForm() {
           disabled={busy}
           className="w-full rounded-xl bg-nike-accent py-3 text-sm font-bold text-white disabled:opacity-70"
         >
-          {busy ? "Đang xử lý…" : mode === "login" ? "Đăng nhập" : "Tạo tài khoản"}
+          {busy
+            ? t("common.processing")
+            : mode === "login"
+              ? t("common.login")
+              : t("login.create")}
         </button>
 
         <button
@@ -133,14 +138,12 @@ function LoginForm() {
           }
           className="w-full text-sm text-white/60 hover:text-white"
         >
-          {mode === "login"
-            ? "Chưa có tài khoản? Đăng ký"
-            : "Đã có tài khoản? Đăng nhập"}
+          {mode === "login" ? t("login.needAccount") : t("login.hasAccount")}
         </button>
 
         <p className="text-center text-xs text-white/40">
           <Link href="/" className="underline">
-            Về trang chủ
+            {t("login.home")}
           </Link>
         </p>
       </form>
@@ -148,15 +151,18 @@ function LoginForm() {
   );
 }
 
+function LoginFallback() {
+  const { t } = useLocale();
+  return (
+    <PageShell title={t("common.login")} subtitle={t("common.loading")}>
+      <p className="text-white/60">{t("common.loading")}</p>
+    </PageShell>
+  );
+}
+
 export default function LoginPage() {
   return (
-    <Suspense
-      fallback={
-        <PageShell title="Đăng nhập" subtitle="Đang tải…">
-          <p className="text-white/60">Loading…</p>
-        </PageShell>
-      }
-    >
+    <Suspense fallback={<LoginFallback />}>
       <LoginForm />
     </Suspense>
   );

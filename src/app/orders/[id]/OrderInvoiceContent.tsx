@@ -5,6 +5,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import PageShell from "@/components/PageShell";
 import { useAuth } from "@/context/AuthContext";
+import { useLocale } from "@/context/LocaleContext";
 import {
   CodState,
   formatVnd,
@@ -14,36 +15,37 @@ import {
   type OrderDetailDto,
   type OrderLineDto,
 } from "@/lib/api";
+import type { MessageKey } from "@/i18n/messages";
 
-function orderStateLabel(state: number) {
+function orderStateKey(state: number): MessageKey {
   switch (state) {
     case OrderState.Pending:
-      return "Chờ xác nhận";
+      return "orders.pending";
     case OrderState.Confirmed:
-      return "Đã xác nhận";
+      return "orders.confirmed";
     case OrderState.Shipped:
-      return "Đang giao";
+      return "orders.shipped";
     case OrderState.Delivered:
-      return "Đã giao";
+      return "orders.delivered";
     case OrderState.Cancelled:
-      return "Đã hủy";
+      return "orders.cancelled";
     default:
-      return String(state);
+      return "orders.title";
   }
 }
 
-function paymentLabel(state: number) {
+function paymentKey(state: number): MessageKey {
   switch (state) {
     case CodState.Unpaid:
-      return "Chưa thu COD";
+      return "pay.unpaid";
     case CodState.Collected:
-      return "Đã thu COD";
+      return "pay.collected";
     case CodState.PartiallyRefunded:
-      return "Hoàn một phần";
+      return "pay.partial";
     case CodState.Refunded:
-      return "Đã hoàn";
+      return "pay.refunded";
     default:
-      return String(state);
+      return "invoice.title";
   }
 }
 
@@ -59,6 +61,7 @@ export default function OrderInvoiceContent() {
   const searchParams = useSearchParams();
   const justPlaced = searchParams.get("invoice") === "1";
   const { isAuthenticated, hydrated } = useAuth();
+  const { t, dateLocale } = useLocale();
   const [detail, setDetail] = useState<OrderDetailDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -78,11 +81,11 @@ export default function OrderInvoiceContent() {
     try {
       setDetail(await storeApi.getMyOrder(params.id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Không tải được hóa đơn");
+      setError(err instanceof Error ? err.message : t("invoice.loadFail"));
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, params.id]);
+  }, [isAuthenticated, params.id, t]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -122,10 +125,12 @@ export default function OrderInvoiceContent() {
         reason: form.reason.trim(),
       });
       setReturnMsg(
-        `Đã gửi yêu cầu đổi/trả cho ${line.skuCode || line.id.slice(0, 8)}`,
+        t("invoice.sentReturn", {
+          code: line.skuCode || line.id.slice(0, 8),
+        }),
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Gửi yêu cầu thất bại");
+      setError(err instanceof Error ? err.message : t("invoice.sendFail"));
     } finally {
       setReturnBusy(null);
     }
@@ -133,21 +138,21 @@ export default function OrderInvoiceContent() {
 
   if (!hydrated || loading) {
     return (
-      <PageShell title="Hóa đơn" subtitle="Đang tải…">
-        <p className="text-white/60">Loading…</p>
+      <PageShell title={t("invoice.title")} subtitle={t("common.loading")}>
+        <p className="text-white/60">{t("common.loading")}</p>
       </PageShell>
     );
   }
 
   if (!isAuthenticated) {
     return (
-      <PageShell title="Hóa đơn" subtitle="Cần đăng nhập.">
+      <PageShell title={t("invoice.title")} subtitle={t("invoice.needLogin")}>
         <div className="page-card rounded-2xl p-8 text-center">
           <Link
             href={`/login?next=/orders/${params.id}`}
             className="inline-flex rounded-xl bg-nike-accent px-5 py-3 text-sm font-bold text-white"
           >
-            Đăng nhập
+            {t("common.login")}
           </Link>
         </div>
       </PageShell>
@@ -156,14 +161,14 @@ export default function OrderInvoiceContent() {
 
   if (error && !detail) {
     return (
-      <PageShell title="Hóa đơn" subtitle="Không tìm thấy đơn.">
+      <PageShell title={t("invoice.title")} subtitle={t("invoice.notFound")}>
         <div className="page-card rounded-2xl p-8 text-center">
-          <p className="text-white/65">{error || "Đơn không tồn tại."}</p>
+          <p className="text-white/65">{error || t("invoice.missing")}</p>
           <Link
             href="/orders"
             className="mt-5 inline-flex rounded-xl border border-white/15 px-5 py-3 text-sm font-semibold"
           >
-            Về danh sách đơn
+            {t("invoice.backList")}
           </Link>
         </div>
       </PageShell>
@@ -172,14 +177,14 @@ export default function OrderInvoiceContent() {
 
   if (!detail) {
     return (
-      <PageShell title="Hóa đơn" subtitle="Không tìm thấy đơn.">
+      <PageShell title={t("invoice.title")} subtitle={t("invoice.notFound")}>
         <div className="page-card rounded-2xl p-8 text-center">
-          <p className="text-white/65">Đơn không tồn tại.</p>
+          <p className="text-white/65">{t("invoice.missing")}</p>
           <Link
             href="/orders"
             className="mt-5 inline-flex rounded-xl border border-white/15 px-5 py-3 text-sm font-semibold"
           >
-            Về danh sách đơn
+            {t("invoice.backList")}
           </Link>
         </div>
       </PageShell>
@@ -194,17 +199,19 @@ export default function OrderInvoiceContent() {
 
   return (
     <PageShell
-      title={justPlaced ? "Đặt hàng thành công" : "Hóa đơn"}
+      title={justPlaced ? t("invoice.success") : t("invoice.title")}
       accent="#c6e600"
       subtitle={
         justPlaced
-          ? "Đơn COD đã tạo · đây là hóa đơn từ API"
-          : `Đơn ${order.number || order.id.slice(0, 8)}`
+          ? t("invoice.successSub")
+          : t("invoice.orderSub", {
+              number: order.number || order.id.slice(0, 8),
+            })
       }
     >
       {justPlaced ? (
         <div className="mb-5 rounded-xl border border-[#c6e600]/30 bg-[#c6e600]/10 px-4 py-3 text-sm text-[#e8f7a0] print:hidden">
-          Cảm ơn bạn đã mua hàng. Admin sẽ thấy đơn này trong Order List.
+          {t("invoice.thanks")}
         </div>
       ) : null}
 
@@ -221,25 +228,25 @@ export default function OrderInvoiceContent() {
           onClick={() => window.print()}
           className="rounded-xl bg-nike-accent px-4 py-2.5 text-sm font-bold text-white"
         >
-          In / lưu PDF
+          {t("invoice.print")}
         </button>
         <Link
           href="/orders"
           className="rounded-xl border border-white/15 px-4 py-2.5 text-sm font-semibold text-white/75 hover:text-white"
         >
-          Đơn của tôi
+          {t("invoice.myOrders")}
         </Link>
         <Link
           href="/returns"
           className="rounded-xl border border-white/15 px-4 py-2.5 text-sm font-semibold text-white/75 hover:text-white"
         >
-          Returns
+          {t("returns.title")}
         </Link>
         <Link
           href="/collections"
           className="rounded-xl border border-white/15 px-4 py-2.5 text-sm font-semibold text-white/75 hover:text-white"
         >
-          Tiếp tục mua
+          {t("invoice.continue")}
         </Link>
       </div>
 
@@ -250,20 +257,23 @@ export default function OrderInvoiceContent() {
         <header className="flex flex-wrap items-start justify-between gap-4 border-b border-white/10 pb-5">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-white/40">
-              Nike UTC · Hóa đơn bán hàng
+              {t("invoice.heading")}
             </p>
             <h2 className="mt-2 text-3xl font-extrabold">
               {order.number || order.id.slice(0, 8)}
             </h2>
             <p className="mt-1 text-sm text-white/55">
-              {orderStateLabel(order.state)} · {paymentLabel(order.paymentState)}
+              {t(orderStateKey(order.state))} · {t(paymentKey(order.paymentState))}
             </p>
           </div>
           <div className="text-right text-sm text-white/55">
-            <p>Thanh toán: COD</p>
+            <p>{t("invoice.payCod")}</p>
             {order.carrier ? (
               <p className="mt-1">
-                VC: {order.carrier} / {order.trackingCode || "—"}
+                {t("invoice.carrier", {
+                  carrier: order.carrier,
+                  tracking: order.trackingCode || "—",
+                })}
               </p>
             ) : null}
           </div>
@@ -272,7 +282,7 @@ export default function OrderInvoiceContent() {
         <section className="mt-5 grid gap-4 sm:grid-cols-2">
           <div>
             <h3 className="text-xs font-bold uppercase tracking-wide text-white/40">
-              Người nhận
+              {t("invoice.recipient")}
             </h3>
             <ul className="mt-2 space-y-1 text-sm text-white/75">
               {addressLines.length ? (
@@ -284,23 +294,23 @@ export default function OrderInvoiceContent() {
           </div>
           <div className="sm:text-right">
             <h3 className="text-xs font-bold uppercase tracking-wide text-white/40">
-              Tổng quan
+              {t("invoice.overview")}
             </h3>
             <dl className="mt-2 space-y-1 text-sm text-white/75">
               <div className="flex justify-between gap-6 sm:justify-end sm:gap-10">
-                <dt>Tạm tính</dt>
+                <dt>{t("invoice.subtotal")}</dt>
                 <dd>{formatVnd(order.subtotal)}</dd>
               </div>
               <div className="flex justify-between gap-6 sm:justify-end sm:gap-10">
-                <dt>Giảm giá</dt>
+                <dt>{t("invoice.discount")}</dt>
                 <dd>−{formatVnd(order.discount)}</dd>
               </div>
               <div className="flex justify-between gap-6 sm:justify-end sm:gap-10">
-                <dt>Ship</dt>
+                <dt>{t("invoice.ship")}</dt>
                 <dd>{formatVnd(order.shippingFee)}</dd>
               </div>
               <div className="flex justify-between gap-6 text-base font-extrabold text-white sm:justify-end sm:gap-10">
-                <dt>Tổng thanh toán</dt>
+                <dt>{t("invoice.grand")}</dt>
                 <dd className="text-nike-accent">{formatVnd(order.total)}</dd>
               </div>
             </dl>
@@ -309,17 +319,17 @@ export default function OrderInvoiceContent() {
 
         <section className="mt-6">
           <h3 className="text-xs font-bold uppercase tracking-wide text-white/40">
-            Chi tiết sản phẩm
+            {t("invoice.items")}
           </h3>
           <div className="mt-3 overflow-x-auto">
             <table className="w-full min-w-[480px] text-left text-sm">
               <thead className="text-xs uppercase text-white/40">
                 <tr>
-                  <th className="pb-2 pr-3 font-semibold">Sản phẩm</th>
-                  <th className="pb-2 pr-3 font-semibold">SKU</th>
-                  <th className="pb-2 pr-3 font-semibold">SL</th>
-                  <th className="pb-2 pr-3 font-semibold">Đơn giá</th>
-                  <th className="pb-2 font-semibold">Thành tiền</th>
+                  <th className="pb-2 pr-3 font-semibold">{t("invoice.colProduct")}</th>
+                  <th className="pb-2 pr-3 font-semibold">{t("invoice.colSku")}</th>
+                  <th className="pb-2 pr-3 font-semibold">{t("invoice.colQty")}</th>
+                  <th className="pb-2 pr-3 font-semibold">{t("invoice.colPrice")}</th>
+                  <th className="pb-2 font-semibold">{t("invoice.colLine")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -346,11 +356,10 @@ export default function OrderInvoiceContent() {
         {order.state === OrderState.Delivered ? (
           <section className="mt-6 border-t border-white/10 pt-4 print:hidden">
             <h3 className="text-xs font-bold uppercase tracking-wide text-white/40">
-              Yêu cầu đổi / trả
+              {t("invoice.returnTitle")}
             </h3>
             <p className="mt-1 text-xs text-white/45">
-              Trong 7 ngày sau giao · Exchange cần SKU thay thế cùng sản phẩm,
-              cùng giá
+              {t("invoice.returnHint")}
             </p>
             <ul className="mt-4 space-y-4">
               {(items || []).map((line) => {
@@ -366,7 +375,7 @@ export default function OrderInvoiceContent() {
                     </p>
                     <div className="mt-3 grid gap-2 sm:grid-cols-2">
                       <label className="block text-xs text-white/50">
-                        Loại
+                        {t("invoice.kind")}
                         <select
                           value={form.kind}
                           onChange={(e) =>
@@ -380,12 +389,12 @@ export default function OrderInvoiceContent() {
                           }
                           className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm outline-none"
                         >
-                          <option value={ReturnKind.Refund}>Hoàn tiền</option>
-                          <option value={ReturnKind.Exchange}>Đổi hàng</option>
+                          <option value={ReturnKind.Refund}>{t("returns.refund")}</option>
+                          <option value={ReturnKind.Exchange}>{t("returns.exchange")}</option>
                         </select>
                       </label>
                       <label className="block text-xs text-white/50">
-                        Số lượng
+                        {t("invoice.qty")}
                         <input
                           type="number"
                           min={1}
@@ -401,7 +410,7 @@ export default function OrderInvoiceContent() {
                         />
                       </label>
                       <label className="block text-xs text-white/50 sm:col-span-2">
-                        Lý do
+                        {t("invoice.reason")}
                         <input
                           value={form.reason}
                           onChange={(e) =>
@@ -411,12 +420,12 @@ export default function OrderInvoiceContent() {
                             }))
                           }
                           className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm outline-none"
-                          placeholder="Size không vừa…"
+                          placeholder={t("invoice.reasonPh")}
                         />
                       </label>
                       {form.kind === ReturnKind.Exchange ? (
                         <label className="block text-xs text-white/50 sm:col-span-2">
-                          SKU thay thế (uuid)
+                          {t("invoice.replaceSku")}
                           <input
                             value={form.replacementSkuId}
                             onChange={(e) =>
@@ -429,7 +438,7 @@ export default function OrderInvoiceContent() {
                               }))
                             }
                             className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm outline-none"
-                            placeholder="UUID SKU cùng sản phẩm, cùng giá"
+                            placeholder={t("invoice.replacePh")}
                           />
                         </label>
                       ) : null}
@@ -440,7 +449,9 @@ export default function OrderInvoiceContent() {
                       onClick={() => void submitReturn(line)}
                       className="mt-3 rounded-xl bg-nike-accent px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
                     >
-                      {returnBusy === line.id ? "Đang gửi…" : "Gửi yêu cầu"}
+                      {returnBusy === line.id
+                        ? t("invoice.sending")
+                        : t("invoice.sendReq")}
                     </button>
                   </li>
                 );
@@ -452,7 +463,7 @@ export default function OrderInvoiceContent() {
         {history?.length ? (
           <section className="mt-6 border-t border-white/10 pt-4 print:hidden">
             <h3 className="text-xs font-bold uppercase tracking-wide text-white/40">
-              Lịch sử đơn
+              {t("invoice.history")}
             </h3>
             <ul className="mt-2 space-y-2 text-xs text-white/50">
               {history.map((h, i) => (
@@ -460,7 +471,7 @@ export default function OrderInvoiceContent() {
                   <span className="text-white/75">{h.action}</span>
                   {h.note ? ` — ${h.note}` : ""}
                   <div>
-                    {h.at ? new Date(h.at).toLocaleString("vi-VN") : ""}
+                    {h.at ? new Date(h.at).toLocaleString(dateLocale) : ""}
                   </div>
                 </li>
               ))}
@@ -469,8 +480,7 @@ export default function OrderInvoiceContent() {
         ) : null}
 
         <p className="mt-8 text-center text-xs text-white/35">
-          Hóa đơn điện tử nội bộ · dữ liệu từ ShoeStore API · không thay thế hóa
-          đơn GTGT
+          {t("invoice.footer")}
         </p>
       </article>
     </PageShell>

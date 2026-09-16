@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useCallback, useEffect, useRef } from "react";
 import type { ShoeProduct } from "@/data/shoes";
+import { useLocale } from "@/context/LocaleContext";
 
 type Props = {
   shoes: ShoeProduct[];
@@ -34,6 +35,7 @@ const pointOnArc = (angleDeg: number, radius: number) => ({
 const pct = (value: number, total: number) => `${round((value / total) * 100)}%`;
 
 function MobileCarousel({ shoes, activeIndex, onChange }: Props) {
+  const { t } = useLocale();
   return (
     <div className="flex w-full max-w-full items-center gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {shoes.map((shoe, index) => {
@@ -42,7 +44,9 @@ function MobileCarousel({ shoes, activeIndex, onChange }: Props) {
           <button
             key={shoe.id}
             type="button"
-            aria-label={`Chọn ${shoe.name} ${shoe.nameAccent}`}
+            aria-label={t("carousel.select", {
+              name: `${shoe.name} ${shoe.nameAccent}`,
+            })}
             aria-pressed={isActive}
             onClick={() => onChange(index)}
             className={`relative h-14 w-14 shrink-0 cursor-pointer overflow-visible rounded-2xl transition-all duration-300 sm:h-16 sm:w-16 ${
@@ -71,6 +75,7 @@ export default function ShoeArcCarousel({
   activeIndex,
   onChange,
 }: Props) {
+  const { t } = useLocale();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const draggingRef = useRef(false);
 
@@ -163,7 +168,7 @@ export default function ShoeArcCarousel({
 
         <button
           type="button"
-          aria-label="Kéo để đổi mẫu giày"
+          aria-label={t("carousel.drag")}
           onPointerDown={(event) => {
             event.preventDefault();
             draggingRef.current = true;
@@ -187,7 +192,9 @@ export default function ShoeArcCarousel({
             <button
               key={shoe.id}
               type="button"
-              aria-label={`Chọn ${shoe.name} ${shoe.nameAccent}`}
+              aria-label={t("carousel.select", {
+                name: `${shoe.name} ${shoe.nameAccent}`,
+              })}
               aria-pressed={isActive}
               onClick={() => onChange(index)}
               className="absolute z-10 cursor-pointer overflow-visible transition-all duration-300"

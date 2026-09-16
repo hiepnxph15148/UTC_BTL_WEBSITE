@@ -7,9 +7,11 @@ import ProductPanel from "@/components/ProductPanel";
 import ShoeArcCarousel from "@/components/ShoeArcCarousel";
 import SiteHeader from "@/components/SiteHeader";
 import { useHomeCatalog } from "@/hooks/useCatalogProducts";
+import { useLocale } from "@/context/LocaleContext";
 
 export default function Home() {
   const { shoes, loading } = useHomeCatalog();
+  const { t } = useLocale();
   const displayShoes = useMemo(() => shoes.slice(0, 5), [shoes]);
   const [activeIndex, setActiveIndex] = useState(0);
   const safeIndex = Math.min(activeIndex, Math.max(displayShoes.length - 1, 0));
@@ -40,12 +42,12 @@ export default function Home() {
 
           {loading ? (
             <p className="px-4 text-center text-xs text-white/45 sm:px-6 md:px-10 lg:px-16">
-              Đang tải…
+              {t("home.loading")}
             </p>
           ) : null}
 
           {displayShoes.length === 0 ? (
-            <p className="p-10 text-center text-white/60">Chưa có sản phẩm.</p>
+            <p className="p-10 text-center text-white/60">{t("home.empty")}</p>
           ) : (
             <div className="relative flex min-h-0 flex-1 flex-col gap-4 px-4 pb-8 pt-1 sm:gap-5 sm:px-6 md:px-10 lg:grid lg:grid-cols-[280px_minmax(0,1fr)_200px] lg:items-center lg:gap-6 lg:px-16 lg:pb-10 lg:pt-0 xl:grid-cols-[300px_minmax(0,1fr)_220px]">
               <div className="relative z-30 order-2 isolate lg:order-1 lg:self-center">

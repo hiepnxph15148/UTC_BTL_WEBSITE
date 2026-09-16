@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import PageShell from "@/components/PageShell";
 import { useAuth } from "@/context/AuthContext";
+import { useLocale } from "@/context/LocaleContext";
 import {
   changePassword,
   getMyProfile,
@@ -18,6 +19,7 @@ import {
 
 export default function AccountPage() {
   const { isAuthenticated, hydrated } = useAuth();
+  const { t } = useLocale();
   const [profile, setProfile] = useState<ProfileDto | null>(null);
   const [addresses, setAddresses] = useState<AddressDto[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -63,9 +65,9 @@ export default function AccountPage() {
       setPhoneNumber(p.phoneNumber || "");
       setAddresses(a);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Không tải hồ sơ");
+      setError(err instanceof Error ? err.message : t("account.loadFail"));
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, t]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -88,9 +90,9 @@ export default function AccountPage() {
         concurrencyStamp: profile.concurrencyStamp,
       });
       setProfile(updated);
-      setMessage("Đã cập nhật hồ sơ");
+      setMessage(t("account.saved"));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Cập nhật hồ sơ thất bại");
+      setError(err instanceof Error ? err.message : t("account.saveFail"));
     } finally {
       setBusy(false);
     }
@@ -109,9 +111,9 @@ export default function AccountPage() {
       });
       setCurrentPassword("");
       setNewPassword("");
-      setMessage("Đã đổi mật khẩu");
+      setMessage(t("account.passChanged"));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Đổi mật khẩu thất bại");
+      setError(err instanceof Error ? err.message : t("account.passFail"));
     } finally {
       setBusy(false);
     }
@@ -128,11 +130,9 @@ export default function AccountPage() {
         email: resetEmail.trim(),
         appName: "MVC",
       });
-      setMessage(
-        "Đã gửi yêu cầu mã khôi phục (cần email server; Debug có thể không gửi thật).",
-      );
+      setMessage(t("account.resetSent"));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Gửi mã thất bại");
+      setError(err instanceof Error ? err.message : t("account.resetSendFail"));
     } finally {
       setBusy(false);
     }
@@ -148,10 +148,10 @@ export default function AccountPage() {
         resetToken: resetToken.trim(),
       });
       setTokenOk(ok);
-      setMessage(ok ? "Token hợp lệ" : "Token không hợp lệ");
+      setMessage(ok ? t("account.tokenOk") : t("account.tokenBad"));
     } catch (err) {
       setTokenOk(false);
-      setError(err instanceof Error ? err.message : "Verify thất bại");
+      setError(err instanceof Error ? err.message : t("account.verifyFail"));
     } finally {
       setBusy(false);
     }
@@ -169,10 +169,10 @@ export default function AccountPage() {
         resetToken: resetToken.trim(),
         password: resetPasswordValue,
       });
-      setMessage("Đã đặt lại mật khẩu");
+      setMessage(t("account.resetOk"));
       setResetPasswordValue("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Reset thất bại");
+      setError(err instanceof Error ? err.message : t("account.resetFail"));
     } finally {
       setBusy(false);
     }
@@ -204,9 +204,9 @@ export default function AccountPage() {
       });
       setEditingAddrId(null);
       await load();
-      setMessage(editingAddrId ? "Đã cập nhật địa chỉ" : "Đã thêm địa chỉ");
+      setMessage(editingAddrId ? t("account.addrUpdated") : t("account.addrAdded"));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Lưu địa chỉ thất bại");
+      setError(err instanceof Error ? err.message : t("account.addrSaveFail"));
     } finally {
       setBusy(false);
     }
@@ -221,7 +221,7 @@ export default function AccountPage() {
       if (editingAddrId === id) setEditingAddrId(null);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Xóa địa chỉ thất bại");
+      setError(err instanceof Error ? err.message : t("account.addrDelFail"));
     } finally {
       setBusy(false);
     }
@@ -229,21 +229,21 @@ export default function AccountPage() {
 
   if (!hydrated) {
     return (
-      <PageShell title="Account" subtitle="Đang tải…">
-        <p className="text-white/60">Loading…</p>
+      <PageShell title={t("account.title")} subtitle={t("common.loading")}>
+        <p className="text-white/60">{t("common.loading")}</p>
       </PageShell>
     );
   }
 
   if (!isAuthenticated) {
     return (
-      <PageShell title="Account" subtitle="Cần đăng nhập.">
+      <PageShell title={t("account.title")} subtitle={t("account.needLogin")}>
         <div className="page-card rounded-2xl p-8 text-center">
           <Link
             href="/login?next=/account"
             className="inline-flex rounded-xl bg-nike-accent px-5 py-3 text-sm font-bold text-white"
           >
-            Đăng nhập
+            {t("common.login")}
           </Link>
         </div>
       </PageShell>
@@ -251,7 +251,7 @@ export default function AccountPage() {
   }
 
   return (
-    <PageShell title="Account" subtitle="Hồ sơ · mật khẩu · sổ địa chỉ">
+    <PageShell title={t("account.title")} subtitle={t("account.subtitle")}>
       {error ? (
         <p className="mb-4 text-sm text-amber-200/90">{error}</p>
       ) : null}
@@ -261,9 +261,9 @@ export default function AccountPage() {
 
       <div className="grid gap-5 lg:grid-cols-2">
         <form onSubmit={saveProfile} className="page-card space-y-3 rounded-2xl p-5">
-          <h2 className="text-lg font-bold">Hồ sơ</h2>
+          <h2 className="text-lg font-bold">{t("account.profile")}</h2>
           <label className="block text-xs text-white/50">
-            User name
+            {t("common.username")}
             <input
               value={userName}
               onChange={(e) => setUserName(e.target.value)}
@@ -271,7 +271,7 @@ export default function AccountPage() {
             />
           </label>
           <label className="block text-xs text-white/50">
-            Email
+            {t("common.email")}
             <input
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -280,7 +280,7 @@ export default function AccountPage() {
           </label>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block text-xs text-white/50">
-              Tên
+              {t("account.firstName")}
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -288,7 +288,7 @@ export default function AccountPage() {
               />
             </label>
             <label className="block text-xs text-white/50">
-              Họ
+              {t("account.lastName")}
               <input
                 value={surname}
                 onChange={(e) => setSurname(e.target.value)}
@@ -297,7 +297,7 @@ export default function AccountPage() {
             </label>
           </div>
           <label className="block text-xs text-white/50">
-            SĐT
+            {t("account.phone")}
             <input
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
@@ -309,14 +309,14 @@ export default function AccountPage() {
             disabled={busy}
             className="rounded-xl bg-nike-accent px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
           >
-            Lưu hồ sơ
+            {t("account.saveProfile")}
           </button>
         </form>
 
         <form onSubmit={savePassword} className="page-card space-y-3 rounded-2xl p-5">
-          <h2 className="text-lg font-bold">Đổi mật khẩu</h2>
+          <h2 className="text-lg font-bold">{t("account.changePass")}</h2>
           <label className="block text-xs text-white/50">
-            Mật khẩu hiện tại
+            {t("account.currentPass")}
             <input
               type="password"
               value={currentPassword}
@@ -325,7 +325,7 @@ export default function AccountPage() {
             />
           </label>
           <label className="block text-xs text-white/50">
-            Mật khẩu mới
+            {t("account.newPass")}
             <input
               required
               type="password"
@@ -339,19 +339,19 @@ export default function AccountPage() {
             disabled={busy}
             className="rounded-xl bg-nike-accent px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
           >
-            Đổi mật khẩu
+            {t("account.changePass")}
           </button>
         </form>
 
         <div className="page-card space-y-3 rounded-2xl p-5 lg:col-span-2">
-          <h2 className="text-lg font-bold">Khôi phục mật khẩu</h2>
+          <h2 className="text-lg font-bold">{t("account.recover")}</h2>
           <form onSubmit={requestReset} className="flex flex-wrap gap-2">
             <input
               required
               type="email"
               value={resetEmail}
               onChange={(e) => setResetEmail(e.target.value)}
-              placeholder="Email nhận mã"
+              placeholder={t("account.resetEmailPh")}
               className="min-w-[200px] flex-1 rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm outline-none"
             />
             <button
@@ -359,27 +359,27 @@ export default function AccountPage() {
               disabled={busy}
               className="rounded-xl border border-white/15 px-4 py-2 text-sm font-semibold disabled:opacity-50"
             >
-              Gửi mã
+              {t("account.sendCode")}
             </button>
           </form>
           <form onSubmit={doResetPassword} className="grid gap-2 sm:grid-cols-2">
             <input
               value={resetUserId}
               onChange={(e) => setResetUserId(e.target.value)}
-              placeholder="User ID (uuid)"
+              placeholder={t("account.userId")}
               className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm outline-none"
             />
             <input
               value={resetToken}
               onChange={(e) => setResetToken(e.target.value)}
-              placeholder="Reset token"
+              placeholder={t("account.resetToken")}
               className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm outline-none"
             />
             <input
               type="password"
               value={resetPasswordValue}
               onChange={(e) => setResetPasswordValue(e.target.value)}
-              placeholder="Mật khẩu mới"
+              placeholder={t("account.newPass")}
               className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm outline-none"
             />
             <div className="flex gap-2">
@@ -389,21 +389,21 @@ export default function AccountPage() {
                 onClick={() => void verifyToken()}
                 className="rounded-xl border border-white/15 px-3 py-2 text-xs font-semibold"
               >
-                Verify token {tokenOk === null ? "" : tokenOk ? "✓" : "✗"}
+                {t("account.verifyToken")} {tokenOk === null ? "" : tokenOk ? "✓" : "✗"}
               </button>
               <button
                 type="submit"
                 disabled={busy}
                 className="rounded-xl bg-nike-accent px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
               >
-                Reset password
+                {t("account.resetPass")}
               </button>
             </div>
           </form>
         </div>
 
         <div className="page-card space-y-3 rounded-2xl p-5 lg:col-span-2">
-          <h2 className="text-lg font-bold">Sổ địa chỉ</h2>
+          <h2 className="text-lg font-bold">{t("account.addresses")}</h2>
           <ul className="space-y-2">
             {addresses.map((a) => (
               <li
@@ -414,7 +414,7 @@ export default function AccountPage() {
                   <p className="font-semibold">
                     {a.recipient}{" "}
                     {a.isDefault ? (
-                      <span className="text-xs text-[#c6e600]">mặc định</span>
+                      <span className="text-xs text-[#c6e600]">{t("account.default")}</span>
                     ) : null}
                   </p>
                   <p className="mt-1 text-sm text-white/55">
@@ -435,7 +435,7 @@ export default function AccountPage() {
                     }}
                     className="rounded-lg border border-white/15 px-2.5 py-1 text-xs font-semibold"
                   >
-                    Sửa
+                    {t("account.edit")}
                   </button>
                   <button
                     type="button"
@@ -443,19 +443,19 @@ export default function AccountPage() {
                     onClick={() => void deleteAddr(a.id)}
                     className="rounded-lg border border-orange-400/40 px-2.5 py-1 text-xs font-semibold text-orange-200"
                   >
-                    Xóa
+                    {t("account.delete")}
                   </button>
                 </div>
               </li>
             ))}
             {!addresses.length ? (
-              <li className="py-4 text-sm text-white/45">Chưa có địa chỉ</li>
+              <li className="py-4 text-sm text-white/45">{t("account.noAddress")}</li>
             ) : null}
           </ul>
 
           <form onSubmit={saveAddress} className="mt-4 grid gap-2 sm:grid-cols-2">
             <h3 className="sm:col-span-2 text-sm font-bold">
-              {editingAddrId ? "Sửa địa chỉ" : "Thêm địa chỉ"}
+              {editingAddrId ? t("account.editAddress") : t("account.addAddress")}
             </h3>
             <input
               required
@@ -463,7 +463,7 @@ export default function AccountPage() {
               onChange={(e) =>
                 setAddrForm((f) => ({ ...f, recipient: e.target.value }))
               }
-              placeholder="Người nhận"
+              placeholder={t("account.recipient")}
               className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm outline-none"
             />
             <input
@@ -472,7 +472,7 @@ export default function AccountPage() {
               onChange={(e) =>
                 setAddrForm((f) => ({ ...f, phone: e.target.value }))
               }
-              placeholder="SĐT"
+              placeholder={t("account.phone")}
               className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm outline-none"
             />
             <input
@@ -481,7 +481,7 @@ export default function AccountPage() {
               onChange={(e) =>
                 setAddrForm((f) => ({ ...f, fullAddress: e.target.value }))
               }
-              placeholder="Địa chỉ đầy đủ"
+              placeholder={t("account.fullAddress")}
               className="sm:col-span-2 rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm outline-none"
             />
             <label className="flex items-center gap-2 text-sm text-white/70">
@@ -492,7 +492,7 @@ export default function AccountPage() {
                   setAddrForm((f) => ({ ...f, isDefault: e.target.checked }))
                 }
               />
-              Đặt mặc định
+              {t("account.setDefault")}
             </label>
             <div className="flex gap-2">
               {editingAddrId ? (
@@ -509,7 +509,7 @@ export default function AccountPage() {
                   }}
                   className="rounded-xl border border-white/15 px-3 py-2 text-xs"
                 >
-                  Hủy
+                  {t("account.cancel")}
                 </button>
               ) : null}
               <button
@@ -517,7 +517,7 @@ export default function AccountPage() {
                 disabled={busy}
                 className="rounded-xl bg-nike-accent px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
               >
-                {editingAddrId ? "Cập nhật" : "Thêm địa chỉ"}
+                {editingAddrId ? t("account.update") : t("account.addAddress")}
               </button>
             </div>
           </form>
