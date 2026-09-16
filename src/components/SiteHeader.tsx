@@ -73,13 +73,6 @@ export default function SiteHeader() {
     setNotifOpen(false);
   };
 
-  const authLinks = isAuthenticated
-    ? ([
-        ...navLinks,
-        { label: "Account", href: "/account" },
-      ] as const)
-    : navLinks;
-
   return (
     <header className="relative z-50 grid shrink-0 grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-4 sm:gap-4 sm:px-6 sm:py-5 md:px-10 md:py-7 lg:gap-6 lg:px-16 lg:py-8">
       <Link href="/" aria-label="Về trang chủ" onClick={() => setMenuOpen(false)}>
@@ -94,7 +87,7 @@ export default function SiteHeader() {
       </Link>
 
       <nav className="hidden items-center justify-end gap-5 pr-4 text-sm text-white/85 md:flex lg:gap-8 lg:pr-6 lg:text-[15px] xl:pr-10">
-        {authLinks.map((link) => (
+        {navLinks.map((link) => (
           <Link
             key={link.href}
             href={link.href}
@@ -283,7 +276,7 @@ export default function SiteHeader() {
       {menuOpen ? (
         <div className="absolute inset-x-0 top-full border-b border-white/10 bg-[#181820]/95 px-4 py-4 backdrop-blur-md md:hidden">
           <nav className="flex flex-col gap-3">
-            {authLinks.map((link) => (
+            {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}

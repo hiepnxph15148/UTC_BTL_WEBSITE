@@ -1,0 +1,22 @@
+[
+  {
+    "id": "CT-MU40NO04",
+    "name": "admin",
+    "email": "admin@abp.io",
+    "topic": "size",
+    "subject": "Đổi size",
+    "message": "hahahha",
+    "status": "Open",
+    "createdAt": "2026-09-16T11:27:29.092Z"
+  },
+  {
+    "id": "CT-MU40NDY3",
+    "name": "admin",
+    "email": "admin@abp.io",
+    "topic": "order",
+    "subject": "Đơn hàng",
+    "message": "hahahah",
+    "status": "Open",
+    "createdAt": "2026-09-16T11:27:16.059Z"
+  }
+]
