@@ -4,6 +4,14 @@ import { FormEvent, useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useLocale } from "@/context/LocaleContext";
 import { ApiError } from "@/lib/api";
+import {
+  PASSWORD_MIN_LENGTH,
+  confirmPasswordError,
+  emailError,
+  formatIssue,
+  passwordError,
+  usernameError,
+} from "@/lib/validation";
 
 export default function LoginModal() {
   const {
@@ -19,6 +27,7 @@ export default function LoginModal() {
   const [userName, setUserName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,6 +36,7 @@ export default function LoginModal() {
     setError(null);
     setMode("login");
     setPassword("");
+    setConfirmPassword("");
   }, [loginModalOpen]);
 
   useEffect(() => {
@@ -48,8 +58,41 @@ export default function LoginModal() {
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setBusy(true);
     setError(null);
+
+    const userMsg = formatIssue(t, usernameError(userName));
+    if (userMsg) {
+      setError(userMsg);
+      return;
+    }
+
+    if (mode === "login") {
+      if (!password) {
+        setError(t("validation.passwordRequired"));
+        return;
+      }
+    } else {
+      const pwdMsg = formatIssue(t, passwordError(password));
+      if (pwdMsg) {
+        setError(pwdMsg);
+        return;
+      }
+      const mailMsg = formatIssue(t, emailError(email));
+      if (mailMsg) {
+        setError(mailMsg);
+        return;
+      }
+      const confirmMsg = formatIssue(
+        t,
+        confirmPasswordError(password, confirmPassword),
+      );
+      if (confirmMsg) {
+        setError(confirmMsg);
+        return;
+      }
+    }
+
+    setBusy(true);
     try {
       if (mode === "login") {
         await login(userName.trim(), password);
@@ -86,6 +129,7 @@ export default function LoginModal() {
     >
       <form
         onSubmit={onSubmit}
+        noValidate
         className="w-full max-w-md space-y-4 rounded-2xl border border-white/15 bg-[#1a1a22] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.55)]"
         onClick={(e) => e.stopPropagation()}
       >
@@ -124,6 +168,7 @@ export default function LoginModal() {
           <input
             required
             autoFocus
+            autoComplete="username"
             value={userName}
             onChange={(e) => setUserName(e.target.value)}
             className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none ring-nike-accent focus:ring-2"
@@ -138,6 +183,7 @@ export default function LoginModal() {
             <input
               required
               type="email"
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none ring-nike-accent focus:ring-2"
@@ -152,11 +198,35 @@ export default function LoginModal() {
           <input
             required
             type="password"
+            autoComplete={mode === "login" ? "current-password" : "new-password"}
+            minLength={PASSWORD_MIN_LENGTH}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none ring-nike-accent focus:ring-2"
           />
+          {mode === "register" ? (
+            <span className="text-[11px] text-white/40">
+              {t("validation.passwordHint", { min: PASSWORD_MIN_LENGTH })}
+            </span>
+          ) : null}
         </label>
+
+        {mode === "register" ? (
+          <label className="block space-y-1.5">
+            <span className="text-xs font-semibold uppercase tracking-wide text-white/50">
+              {t("validation.confirmPassword")}
+            </span>
+            <input
+              required
+              type="password"
+              autoComplete="new-password"
+              minLength={PASSWORD_MIN_LENGTH}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none ring-nike-accent focus:ring-2"
+            />
+          </label>
+        ) : null}
 
         <button
           type="submit"
@@ -172,7 +242,11 @@ export default function LoginModal() {
 
         <button
           type="button"
-          onClick={() => setMode((m) => (m === "login" ? "register" : "login"))}
+          onClick={() => {
+            setMode((m) => (m === "login" ? "register" : "login"));
+            setError(null);
+            setConfirmPassword("");
+          }}
           className="w-full text-sm text-white/60 hover:text-white"
         >
           {mode === "login" ? t("login.needAccount") : t("login.hasAccount")}

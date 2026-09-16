@@ -16,6 +16,7 @@ import {
   type OrderLineDto,
 } from "@/lib/api";
 import type { MessageKey } from "@/i18n/messages";
+import { REASON_MIN_LENGTH, isNonEmpty } from "@/lib/validation";
 
 function orderStateKey(state: number): MessageKey {
   switch (state) {
@@ -110,17 +111,39 @@ export default function OrderInvoiceContent() {
     if (!detail || returnBusy) return;
     const form = returnForms[line.id];
     if (!form) return;
-    setReturnBusy(line.id);
     setReturnMsg(null);
     setError(null);
+
+    const qty = Math.trunc(Number(form.quantity));
+    if (!Number.isFinite(qty) || qty < 1) {
+      setError(t("validation.returnQtyMin"));
+      return;
+    }
+    if (qty > line.quantity) {
+      setError(t("validation.returnQtyMax", { max: line.quantity }));
+      return;
+    }
+    if (!isNonEmpty(form.reason, REASON_MIN_LENGTH)) {
+      setError(t("validation.returnReasonMin", { min: REASON_MIN_LENGTH }));
+      return;
+    }
+    if (
+      form.kind === ReturnKind.Exchange &&
+      !isNonEmpty(form.replacementSkuId)
+    ) {
+      setError(t("validation.exchangeSkuRequired"));
+      return;
+    }
+
+    setReturnBusy(line.id);
     try {
       await storeApi.requestReturn(detail.order.id, {
         orderLineId: line.id,
-        quantity: Math.max(1, Math.trunc(Number(form.quantity) || 1)),
+        quantity: qty,
         kind: form.kind,
         replacementSkuId:
           form.kind === ReturnKind.Exchange
-            ? form.replacementSkuId.trim() || null
+            ? form.replacementSkuId.trim()
             : null,
         reason: form.reason.trim(),
       });
@@ -412,6 +435,8 @@ export default function OrderInvoiceContent() {
                       <label className="block text-xs text-white/50 sm:col-span-2">
                         {t("invoice.reason")}
                         <input
+                          required
+                          minLength={REASON_MIN_LENGTH}
                           value={form.reason}
                           onChange={(e) =>
                             setReturnForms((prev) => ({
@@ -427,6 +452,7 @@ export default function OrderInvoiceContent() {
                         <label className="block text-xs text-white/50 sm:col-span-2">
                           {t("invoice.replaceSku")}
                           <input
+                            required
                             value={form.replacementSkuId}
                             onChange={(e) =>
                               setReturnForms((prev) => ({

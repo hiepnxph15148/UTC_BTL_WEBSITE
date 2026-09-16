@@ -9,6 +9,15 @@ import {
   submitContact,
   type ContactTopic,
 } from "@/lib/api";
+import {
+  MESSAGE_MAX_LENGTH,
+  MESSAGE_MIN_LENGTH,
+  NAME_MIN_LENGTH,
+  emailError,
+  formatIssue,
+  messageError,
+  nameError,
+} from "@/lib/validation";
 
 export default function ContactPage() {
   const { isAuthenticated, hydrated, session } = useAuth();
@@ -49,11 +58,33 @@ export default function ContactPage() {
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (busy) return;
+    setSent(false);
+
+    const nameMsg = formatIssue(t, nameError(name));
+    if (nameMsg) {
+      setError(nameMsg);
+      return;
+    }
+    const mailMsg = formatIssue(t, emailError(email));
+    if (mailMsg) {
+      setError(mailMsg);
+      return;
+    }
+    const messageMsg = formatIssue(t, messageError(message));
+    if (messageMsg) {
+      setError(messageMsg);
+      return;
+    }
+
     setBusy(true);
     setError(null);
-    setSent(false);
     try {
-      await submitContact({ name, email, topic, message });
+      await submitContact({
+        name: name.trim(),
+        email: email.trim(),
+        topic,
+        message: message.trim(),
+      });
       setSent(true);
       setMessage("");
       setTopic("order");
@@ -74,6 +105,7 @@ export default function ContactPage() {
         <form
           onSubmit={onSubmit}
           className="page-card rounded-2xl p-5 sm:p-7"
+          noValidate
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="flex flex-col gap-2 text-sm">
@@ -81,6 +113,7 @@ export default function ContactPage() {
               <input
                 required
                 name="name"
+                minLength={NAME_MIN_LENGTH}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="h-11 rounded-xl border border-white/15 bg-black/40 px-3 text-white outline-none transition-colors focus:border-nike-accent"
@@ -122,6 +155,8 @@ export default function ContactPage() {
               required
               name="message"
               rows={5}
+              minLength={MESSAGE_MIN_LENGTH}
+              maxLength={MESSAGE_MAX_LENGTH}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               className="rounded-xl border border-white/15 bg-black/40 px-3 py-3 text-white outline-none transition-colors focus:border-nike-accent"

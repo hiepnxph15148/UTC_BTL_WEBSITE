@@ -16,6 +16,19 @@ import {
   type AddressDto,
   type ProfileDto,
 } from "@/lib/api";
+import {
+  ADDRESS_MIN_LENGTH,
+  PASSWORD_MIN_LENGTH,
+  addressError,
+  confirmPasswordError,
+  emailError,
+  formatIssue,
+  isNonEmpty,
+  passwordError,
+  phoneError,
+  recipientError,
+  usernameError,
+} from "@/lib/validation";
 
 export default function AccountPage() {
   const { isAuthenticated, hydrated } = useAuth();
@@ -34,6 +47,7 @@ export default function AccountPage() {
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
 
   const [resetEmail, setResetEmail] = useState("");
   const [resetUserId, setResetUserId] = useState("");
@@ -77,16 +91,35 @@ export default function AccountPage() {
   const saveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy || !profile) return;
-    setBusy(true);
     setError(null);
     setMessage(null);
+
+    const userMsg = formatIssue(t, usernameError(userName));
+    if (userMsg) {
+      setError(userMsg);
+      return;
+    }
+    const mailMsg = formatIssue(t, emailError(email));
+    if (mailMsg) {
+      setError(mailMsg);
+      return;
+    }
+    if (phoneNumber.trim()) {
+      const phoneMsg = formatIssue(t, phoneError(phoneNumber));
+      if (phoneMsg) {
+        setError(phoneMsg);
+        return;
+      }
+    }
+
+    setBusy(true);
     try {
       const updated = await updateMyProfile({
-        userName,
-        email,
-        name: name || null,
-        surname: surname || null,
-        phoneNumber: phoneNumber || null,
+        userName: userName.trim(),
+        email: email.trim(),
+        name: name.trim() || null,
+        surname: surname.trim() || null,
+        phoneNumber: phoneNumber.trim() || null,
         concurrencyStamp: profile.concurrencyStamp,
       });
       setProfile(updated);
@@ -101,9 +134,24 @@ export default function AccountPage() {
   const savePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
-    setBusy(true);
     setError(null);
     setMessage(null);
+
+    const pwdMsg = formatIssue(t, passwordError(newPassword));
+    if (pwdMsg) {
+      setError(pwdMsg);
+      return;
+    }
+    const confirmMsg = formatIssue(
+      t,
+      confirmPasswordError(newPassword, confirmNewPassword),
+    );
+    if (confirmMsg) {
+      setError(confirmMsg);
+      return;
+    }
+
+    setBusy(true);
     try {
       await changePassword({
         currentPassword: currentPassword || null,
@@ -111,6 +159,7 @@ export default function AccountPage() {
       });
       setCurrentPassword("");
       setNewPassword("");
+      setConfirmNewPassword("");
       setMessage(t("account.passChanged"));
     } catch (err) {
       setError(err instanceof Error ? err.message : t("account.passFail"));
@@ -122,9 +171,16 @@ export default function AccountPage() {
   const requestReset = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
-    setBusy(true);
     setError(null);
     setMessage(null);
+
+    const mailMsg = formatIssue(t, emailError(resetEmail));
+    if (mailMsg) {
+      setError(mailMsg);
+      return;
+    }
+
+    setBusy(true);
     try {
       await sendPasswordResetCode({
         email: resetEmail.trim(),
@@ -140,8 +196,12 @@ export default function AccountPage() {
 
   const verifyToken = async () => {
     if (busy) return;
-    setBusy(true);
     setError(null);
+    if (!isNonEmpty(resetUserId) || !isNonEmpty(resetToken)) {
+      setError(t("validation.resetFieldsRequired"));
+      return;
+    }
+    setBusy(true);
     try {
       const ok = await verifyPasswordResetToken({
         userId: resetUserId.trim(),
@@ -160,9 +220,24 @@ export default function AccountPage() {
   const doResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
-    setBusy(true);
     setError(null);
     setMessage(null);
+
+    if (!isNonEmpty(resetUserId)) {
+      setError(t("validation.userIdRequired"));
+      return;
+    }
+    if (!isNonEmpty(resetToken)) {
+      setError(t("validation.tokenRequired"));
+      return;
+    }
+    const pwdMsg = formatIssue(t, passwordError(resetPasswordValue));
+    if (pwdMsg) {
+      setError(pwdMsg);
+      return;
+    }
+
+    setBusy(true);
     try {
       await resetPassword({
         userId: resetUserId.trim(),
@@ -181,9 +256,26 @@ export default function AccountPage() {
   const saveAddress = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
-    setBusy(true);
     setError(null);
     setMessage(null);
+
+    const recipientMsg = formatIssue(t, recipientError(addrForm.recipient));
+    if (recipientMsg) {
+      setError(recipientMsg);
+      return;
+    }
+    const phoneMsg = formatIssue(t, phoneError(addrForm.phone));
+    if (phoneMsg) {
+      setError(phoneMsg);
+      return;
+    }
+    const addressMsg = formatIssue(t, addressError(addrForm.fullAddress));
+    if (addressMsg) {
+      setError(addressMsg);
+      return;
+    }
+
+    setBusy(true);
     try {
       const input = {
         recipient: addrForm.recipient.trim(),
@@ -260,11 +352,12 @@ export default function AccountPage() {
       ) : null}
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <form onSubmit={saveProfile} className="page-card space-y-3 rounded-2xl p-5">
+        <form onSubmit={saveProfile} className="page-card space-y-3 rounded-2xl p-5" noValidate>
           <h2 className="text-lg font-bold">{t("account.profile")}</h2>
           <label className="block text-xs text-white/50">
             {t("common.username")}
             <input
+              required
               value={userName}
               onChange={(e) => setUserName(e.target.value)}
               className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm outline-none"
@@ -273,6 +366,8 @@ export default function AccountPage() {
           <label className="block text-xs text-white/50">
             {t("common.email")}
             <input
+              required
+              type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm outline-none"
@@ -299,8 +394,11 @@ export default function AccountPage() {
           <label className="block text-xs text-white/50">
             {t("account.phone")}
             <input
+              type="tel"
+              inputMode="tel"
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
+              placeholder={t("validation.phoneOptionalPh")}
               className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm outline-none"
             />
           </label>
@@ -313,12 +411,13 @@ export default function AccountPage() {
           </button>
         </form>
 
-        <form onSubmit={savePassword} className="page-card space-y-3 rounded-2xl p-5">
+        <form onSubmit={savePassword} className="page-card space-y-3 rounded-2xl p-5" noValidate>
           <h2 className="text-lg font-bold">{t("account.changePass")}</h2>
           <label className="block text-xs text-white/50">
             {t("account.currentPass")}
             <input
               type="password"
+              autoComplete="current-password"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
               className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm outline-none"
@@ -329,8 +428,25 @@ export default function AccountPage() {
             <input
               required
               type="password"
+              autoComplete="new-password"
+              minLength={PASSWORD_MIN_LENGTH}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
+              className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm outline-none"
+            />
+            <span className="mt-1 block text-[11px] text-white/40">
+              {t("validation.passwordHint", { min: PASSWORD_MIN_LENGTH })}
+            </span>
+          </label>
+          <label className="block text-xs text-white/50">
+            {t("validation.confirmPassword")}
+            <input
+              required
+              type="password"
+              autoComplete="new-password"
+              minLength={PASSWORD_MIN_LENGTH}
+              value={confirmNewPassword}
+              onChange={(e) => setConfirmNewPassword(e.target.value)}
               className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm outline-none"
             />
           </label>
@@ -345,7 +461,7 @@ export default function AccountPage() {
 
         <div className="page-card space-y-3 rounded-2xl p-5 lg:col-span-2">
           <h2 className="text-lg font-bold">{t("account.recover")}</h2>
-          <form onSubmit={requestReset} className="flex flex-wrap gap-2">
+          <form onSubmit={requestReset} className="flex flex-wrap gap-2" noValidate>
             <input
               required
               type="email"
@@ -362,21 +478,25 @@ export default function AccountPage() {
               {t("account.sendCode")}
             </button>
           </form>
-          <form onSubmit={doResetPassword} className="grid gap-2 sm:grid-cols-2">
+          <form onSubmit={doResetPassword} className="grid gap-2 sm:grid-cols-2" noValidate>
             <input
+              required
               value={resetUserId}
               onChange={(e) => setResetUserId(e.target.value)}
               placeholder={t("account.userId")}
               className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm outline-none"
             />
             <input
+              required
               value={resetToken}
               onChange={(e) => setResetToken(e.target.value)}
               placeholder={t("account.resetToken")}
               className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm outline-none"
             />
             <input
+              required
               type="password"
+              minLength={PASSWORD_MIN_LENGTH}
               value={resetPasswordValue}
               onChange={(e) => setResetPasswordValue(e.target.value)}
               placeholder={t("account.newPass")}
@@ -453,12 +573,13 @@ export default function AccountPage() {
             ) : null}
           </ul>
 
-          <form onSubmit={saveAddress} className="mt-4 grid gap-2 sm:grid-cols-2">
+          <form onSubmit={saveAddress} className="mt-4 grid gap-2 sm:grid-cols-2" noValidate>
             <h3 className="sm:col-span-2 text-sm font-bold">
               {editingAddrId ? t("account.editAddress") : t("account.addAddress")}
             </h3>
             <input
               required
+              minLength={2}
               value={addrForm.recipient}
               onChange={(e) =>
                 setAddrForm((f) => ({ ...f, recipient: e.target.value }))
@@ -468,15 +589,18 @@ export default function AccountPage() {
             />
             <input
               required
+              type="tel"
+              inputMode="tel"
               value={addrForm.phone}
               onChange={(e) =>
                 setAddrForm((f) => ({ ...f, phone: e.target.value }))
               }
-              placeholder={t("account.phone")}
+              placeholder={t("validation.phoneExample")}
               className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm outline-none"
             />
             <input
               required
+              minLength={ADDRESS_MIN_LENGTH}
               value={addrForm.fullAddress}
               onChange={(e) =>
                 setAddrForm((f) => ({ ...f, fullAddress: e.target.value }))

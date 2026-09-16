@@ -7,6 +7,14 @@ import PageShell from "@/components/PageShell";
 import { useAuth } from "@/context/AuthContext";
 import { useLocale } from "@/context/LocaleContext";
 import { ApiError } from "@/lib/api";
+import {
+  PASSWORD_MIN_LENGTH,
+  confirmPasswordError,
+  emailError,
+  formatIssue,
+  passwordError,
+  usernameError,
+} from "@/lib/validation";
 
 function resolveAfterLogin(userName: string, nextParam: string | null) {
   if (nextParam && nextParam !== "/") return nextParam;
@@ -25,6 +33,7 @@ function LoginForm() {
   const [userName, setUserName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,8 +46,41 @@ function LoginForm() {
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setBusy(true);
     setError(null);
+
+    const userMsg = formatIssue(t, usernameError(userName));
+    if (userMsg) {
+      setError(userMsg);
+      return;
+    }
+
+    if (mode === "login") {
+      if (!password) {
+        setError(t("validation.passwordRequired"));
+        return;
+      }
+    } else {
+      const pwdMsg = formatIssue(t, passwordError(password));
+      if (pwdMsg) {
+        setError(pwdMsg);
+        return;
+      }
+      const mailMsg = formatIssue(t, emailError(email));
+      if (mailMsg) {
+        setError(mailMsg);
+        return;
+      }
+      const confirmMsg = formatIssue(
+        t,
+        confirmPasswordError(password, confirmPassword),
+      );
+      if (confirmMsg) {
+        setError(confirmMsg);
+        return;
+      }
+    }
+
+    setBusy(true);
     try {
       if (mode === "login") {
         await login(userName.trim(), password);
@@ -72,6 +114,7 @@ function LoginForm() {
       <form
         onSubmit={onSubmit}
         className="page-card mx-auto max-w-md space-y-4 rounded-2xl p-6"
+        noValidate
       >
         {error ? (
           <p className="rounded-xl border border-red-400/30 bg-red-400/10 px-3 py-2 text-sm text-red-100">
@@ -85,6 +128,7 @@ function LoginForm() {
           </span>
           <input
             required
+            autoComplete="username"
             value={userName}
             onChange={(e) => setUserName(e.target.value)}
             className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none ring-nike-accent focus:ring-2"
@@ -99,6 +143,7 @@ function LoginForm() {
             <input
               required
               type="email"
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none ring-nike-accent focus:ring-2"
@@ -113,11 +158,35 @@ function LoginForm() {
           <input
             required
             type="password"
+            autoComplete={mode === "login" ? "current-password" : "new-password"}
+            minLength={PASSWORD_MIN_LENGTH}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none ring-nike-accent focus:ring-2"
           />
+          {mode === "register" ? (
+            <span className="text-[11px] text-white/40">
+              {t("validation.passwordHint", { min: PASSWORD_MIN_LENGTH })}
+            </span>
+          ) : null}
         </label>
+
+        {mode === "register" ? (
+          <label className="block space-y-1.5">
+            <span className="text-xs font-semibold uppercase tracking-wide text-white/50">
+              {t("validation.confirmPassword")}
+            </span>
+            <input
+              required
+              type="password"
+              autoComplete="new-password"
+              minLength={PASSWORD_MIN_LENGTH}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none ring-nike-accent focus:ring-2"
+            />
+          </label>
+        ) : null}
 
         <button
           type="submit"
@@ -133,9 +202,11 @@ function LoginForm() {
 
         <button
           type="button"
-          onClick={() =>
-            setMode((m) => (m === "login" ? "register" : "login"))
-          }
+          onClick={() => {
+            setMode((m) => (m === "login" ? "register" : "login"));
+            setError(null);
+            setConfirmPassword("");
+          }}
           className="w-full text-sm text-white/60 hover:text-white"
         >
           {mode === "login" ? t("login.needAccount") : t("login.hasAccount")}

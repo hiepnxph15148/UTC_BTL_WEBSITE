@@ -7,8 +7,15 @@ import { useRouter } from "next/navigation";
 import PageShell from "@/components/PageShell";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
-import { formatVnd, storeApi, type QuoteDto } from "@/lib/api";
 import { useLocale } from "@/context/LocaleContext";
+import { formatVnd, storeApi, type QuoteDto } from "@/lib/api";
+import {
+  ADDRESS_MIN_LENGTH,
+  addressError,
+  formatIssue,
+  nameError,
+  phoneError,
+} from "@/lib/validation";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -47,9 +54,12 @@ export default function CheckoutPage() {
   }, [isAuthenticated]);
 
   const ensureAddress = useCallback(async () => {
-    if (!name.trim() || !phone.trim() || !address.trim()) {
-      throw new Error(t("checkout.fillRequired"));
-    }
+    const nameMsg = formatIssue(t, nameError(name));
+    if (nameMsg) throw new Error(nameMsg);
+    const phoneMsg = formatIssue(t, phoneError(phone));
+    if (phoneMsg) throw new Error(phoneMsg);
+    const addressMsg = formatIssue(t, addressError(address));
+    if (addressMsg) throw new Error(addressMsg);
     if (addressId) return addressId;
 
     const created = await storeApi.createAddress({
@@ -203,13 +213,15 @@ export default function CheckoutPage() {
                 </span>
                 <input
                   required
+                  type="tel"
+                  inputMode="tel"
                   value={phone}
                   onChange={(e) => {
                     setPhone(e.target.value);
                     setAddressId(null);
                     setQuote(null);
                   }}
-                  placeholder="09xx xxx xxx"
+                  placeholder={t("validation.phoneExample")}
                   className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none ring-nike-accent focus:ring-2"
                 />
               </label>
@@ -219,6 +231,7 @@ export default function CheckoutPage() {
                 </span>
                 <input
                   required
+                  minLength={ADDRESS_MIN_LENGTH}
                   value={address}
                   onChange={(e) => {
                     setAddress(e.target.value);
