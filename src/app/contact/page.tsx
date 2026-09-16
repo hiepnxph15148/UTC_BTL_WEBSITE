@@ -8,6 +8,13 @@ import {
   submitContact,
   type ContactTopic,
 } from "@/lib/api";
+import {
+  MESSAGE_MAX_LENGTH,
+  MESSAGE_MIN_LENGTH,
+  NAME_MIN_LENGTH,
+  emailError,
+  nameError,
+} from "@/lib/validation";
 
 export default function ContactPage() {
   const { isAuthenticated, hydrated, session } = useAuth();
@@ -47,11 +54,37 @@ export default function ContactPage() {
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (busy) return;
+    setSent(false);
+
+    const nameErr = nameError(name);
+    if (nameErr) {
+      setError(nameErr);
+      return;
+    }
+    const mailErr = emailError(email);
+    if (mailErr) {
+      setError(mailErr);
+      return;
+    }
+    const trimmedMessage = message.trim();
+    if (trimmedMessage.length < MESSAGE_MIN_LENGTH) {
+      setError(`Nội dung tối thiểu ${MESSAGE_MIN_LENGTH} ký tự.`);
+      return;
+    }
+    if (trimmedMessage.length > MESSAGE_MAX_LENGTH) {
+      setError(`Nội dung tối đa ${MESSAGE_MAX_LENGTH} ký tự.`);
+      return;
+    }
+
     setBusy(true);
     setError(null);
-    setSent(false);
     try {
-      await submitContact({ name, email, topic, message });
+      await submitContact({
+        name: name.trim(),
+        email: email.trim(),
+        topic,
+        message: trimmedMessage,
+      });
       setSent(true);
       setMessage("");
       setTopic("order");
@@ -79,6 +112,7 @@ export default function ContactPage() {
               <input
                 required
                 name="name"
+                minLength={NAME_MIN_LENGTH}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="h-11 rounded-xl border border-white/15 bg-black/40 px-3 text-white outline-none transition-colors focus:border-nike-accent"
@@ -120,6 +154,8 @@ export default function ContactPage() {
               required
               name="message"
               rows={5}
+              minLength={MESSAGE_MIN_LENGTH}
+              maxLength={MESSAGE_MAX_LENGTH}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               className="rounded-xl border border-white/15 bg-black/40 px-3 py-3 text-white outline-none transition-colors focus:border-nike-accent"

@@ -14,6 +14,7 @@ import {
   type OrderDetailDto,
   type OrderLineDto,
 } from "@/lib/api";
+import { isNonEmpty } from "@/lib/validation";
 
 function orderStateLabel(state: number) {
   switch (state) {
@@ -107,17 +108,39 @@ export default function OrderInvoiceContent() {
     if (!detail || returnBusy) return;
     const form = returnForms[line.id];
     if (!form) return;
-    setReturnBusy(line.id);
     setReturnMsg(null);
     setError(null);
+
+    const qty = Math.trunc(Number(form.quantity));
+    if (!Number.isFinite(qty) || qty < 1) {
+      setError("Số lượng đổi/trả tối thiểu là 1.");
+      return;
+    }
+    if (qty > line.quantity) {
+      setError(`Số lượng không được vượt quá ${line.quantity}.`);
+      return;
+    }
+    if (!isNonEmpty(form.reason, 3)) {
+      setError("Vui lòng nhập lý do (tối thiểu 3 ký tự).");
+      return;
+    }
+    if (
+      form.kind === ReturnKind.Exchange &&
+      !isNonEmpty(form.replacementSkuId)
+    ) {
+      setError("Đổi hàng cần nhập UUID SKU thay thế.");
+      return;
+    }
+
+    setReturnBusy(line.id);
     try {
       await storeApi.requestReturn(detail.order.id, {
         orderLineId: line.id,
-        quantity: Math.max(1, Math.trunc(Number(form.quantity) || 1)),
+        quantity: qty,
         kind: form.kind,
         replacementSkuId:
           form.kind === ReturnKind.Exchange
-            ? form.replacementSkuId.trim() || null
+            ? form.replacementSkuId.trim()
             : null,
         reason: form.reason.trim(),
       });
@@ -403,6 +426,8 @@ export default function OrderInvoiceContent() {
                       <label className="block text-xs text-white/50 sm:col-span-2">
                         Lý do
                         <input
+                          required
+                          minLength={3}
                           value={form.reason}
                           onChange={(e) =>
                             setReturnForms((prev) => ({
@@ -418,6 +443,7 @@ export default function OrderInvoiceContent() {
                         <label className="block text-xs text-white/50 sm:col-span-2">
                           SKU thay thế (uuid)
                           <input
+                            required
                             value={form.replacementSkuId}
                             onChange={(e) =>
                               setReturnForms((prev) => ({
