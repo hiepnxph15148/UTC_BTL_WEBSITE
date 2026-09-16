@@ -21,6 +21,7 @@ import {
 import {
   formatVnd,
   mediaUrl,
+  splitName,
   storeApi,
   type OrderDto,
   type ReportDto,
@@ -101,28 +102,39 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       const from = new Date(now);
       from.setMonth(from.getMonth() - 6);
 
-      const [products, adminOrders, reportDto] = await Promise.all([
-        storeApi.getAdminProducts({ take: 100 }),
-        storeApi.getAdminOrders({ take: 100 }),
-        storeApi.getReport(from.toISOString(), now.toISOString()),
-      ]);
+      const [products, adminOrders, reportDto, categoriesLookup] =
+        await Promise.all([
+          storeApi.getAdminProducts({ take: 100 }),
+          storeApi.getAdminOrders({ take: 100 }),
+          storeApi.getReport(from.toISOString(), now.toISOString()),
+          storeApi.getLookups(LookupKind.Category),
+        ]);
+
+      const categoryNameById = new Map(
+        categoriesLookup.map((c) => [c.id, c.name || ""]),
+      );
 
       setApiProducts(
-        products.map((p, index) => ({
-          id: p.id,
-          name: p.name || "Product",
-          nameAccent: p.slug || "",
-          price: "—",
-          category: p.categoryId,
-          accent: ["#ed3b6b", "#3b82f6", "#c6e600", "#8b5cff"][index % 4],
-          hero: mediaUrl(p.imageUrl) || encodeURI(`/item/image ${(index % 15) + 1}.png`),
-          colors: ["#ffffff", "#1a1a1a"],
-          sizes: [38, 39, 40, 41, 42],
-          stock: p.published ? 10 : 0,
-          sales: 0,
-          createdAt: new Date().toISOString().slice(0, 10),
-          source: "custom" as const,
-        })),
+        products.map((p, index) => {
+          const { name, nameAccent } = splitName(p.name || "Product");
+          return {
+            id: p.id,
+            name,
+            nameAccent,
+            price: "—",
+            category: categoryNameById.get(p.categoryId) || "—",
+            accent: ["#ed3b6b", "#3b82f6", "#c6e600", "#8b5cff"][index % 4],
+            hero:
+              mediaUrl(p.imageUrl) ||
+              encodeURI(`/item/image ${(index % 15) + 1}.png`),
+            colors: ["#ffffff", "#1a1a1a"],
+            sizes: [38, 39, 40, 41, 42],
+            stock: p.published ? 10 : 0,
+            sales: 0,
+            createdAt: new Date().toISOString().slice(0, 10),
+            source: "custom" as const,
+          };
+        }),
       );
       setOrders(adminOrders);
       setReport(reportDto);

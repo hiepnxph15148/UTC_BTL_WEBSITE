@@ -6,6 +6,10 @@ import { orderStateLabel, useAdmin } from "@/context/AdminContext";
 import { fakeOrders } from "@/lib/admin-store";
 import { parsePrice } from "@/data/shoes";
 import { formatVnd } from "@/lib/api";
+import {
+  displayOrderNumber,
+  formatAddressRecipient,
+} from "@/lib/format-display";
 
 const RevenueChart = dynamic(
   () => import("@/components/admin/RevenueChart"),
@@ -192,13 +196,14 @@ export default function AdminDashboardPage() {
             <tbody>
               {(fromApi && orders.length
                 ? orders.slice(0, 5).map((order) => ({
-                    id: order.number || order.id,
+                    id: displayOrderNumber(order.number, order.id),
                     product: order.carrier || order.trackingCode || "Đơn hàng",
                     date: order.reservationExpiresAt?.slice(0, 10) || "—",
                     payment: "COD",
-                    customer:
-                      order.addressSnapshot?.split(/[|,]/)[0]?.trim() ||
+                    customer: formatAddressRecipient(
+                      order.addressSnapshot,
                       "Khách",
+                    ),
                     status: orderStateLabel(order.state),
                     amount: order.total,
                     amountLabel: formatVnd(order.total),

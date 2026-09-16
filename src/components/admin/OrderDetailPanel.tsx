@@ -10,6 +10,11 @@ import {
   type OrderDto,
 } from "@/lib/api";
 import {
+  displayOrderNumber,
+  displayProductName,
+  formatAddressLines,
+} from "@/lib/format-display";
+import {
   formatOrderAmount,
   orderStateLabel,
   paymentStateLabel,
@@ -73,10 +78,7 @@ export default function OrderDetailPanel({ order, onClose, onChanged }: Props) {
     }
   };
 
-  const addressLines = (current.addressSnapshot || "")
-    .split("|")
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const addressLines = formatAddressLines(current.addressSnapshot);
 
   return (
     <div className="admin-card flex max-h-[min(82vh,820px)] flex-col overflow-hidden">
@@ -86,7 +88,7 @@ export default function OrderDetailPanel({ order, onClose, onChanged }: Props) {
             Chi tiết đơn
           </p>
           <h3 className="mt-1 text-xl font-extrabold">
-            {current.number || current.id.slice(0, 8)}
+            {displayOrderNumber(current.number, current.id)}
           </h3>
           <p className="mt-1 text-sm text-white/55">
             {orderStateLabel(current.state)} · {paymentStateLabel(current.paymentState)} ·{" "}
@@ -167,9 +169,14 @@ export default function OrderDetailPanel({ order, onClose, onChanged }: Props) {
                 key={item.id}
                 className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm"
               >
-                <div className="font-semibold">{item.productName || "SP"}</div>
+                <div className="font-semibold">
+                  {displayProductName(item.productName)}
+                </div>
                 <div className="mt-0.5 text-xs text-white/45">
-                  {item.skuCode} · x{item.quantity} · {formatVnd(item.unitPrice)}
+                  {item.skuCode && !item.skuCode.match(/^[0-9a-f-]{36}$/i)
+                    ? `${item.skuCode} · `
+                    : ""}
+                  x{item.quantity} · {formatVnd(item.unitPrice)}
                   {item.discount > 0 ? ` · −${formatVnd(item.discount)}` : ""}
                 </div>
               </li>

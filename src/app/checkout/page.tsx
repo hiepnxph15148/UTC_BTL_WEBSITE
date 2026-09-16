@@ -9,6 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { useLocale } from "@/context/LocaleContext";
 import { formatVnd, storeApi, type QuoteDto } from "@/lib/api";
+import { displayProductName } from "@/lib/format-display";
 import {
   ADDRESS_MIN_LENGTH,
   addressError,
@@ -277,17 +278,22 @@ export default function CheckoutPage() {
           <h2 className="text-xl font-bold">{t("checkout.order")}</h2>
           <div className="mt-4 max-h-64 space-y-3 overflow-y-auto pr-1">
             {quote?.items?.length
-              ? quote.items.map((line) => (
+              ? quote.items.map((line) => {
+                  const cartItem = items.find((i) => i.skuId === line.skuId);
+                  const cartTitle = cartItem
+                    ? `${cartItem.name} ${cartItem.nameAccent}`.trim()
+                    : null;
+                  return (
                   <div
                     key={line.skuId}
                     className="flex items-start justify-between gap-3 text-sm"
                   >
                     <div className="min-w-0">
                       <p className="font-semibold">
-                        {line.productName || line.code}
+                        {displayProductName(line.productName, cartTitle)}
                       </p>
                       <p className="text-xs text-white/50">
-                        {line.code} · x{line.quantity}
+                        x{line.quantity}
                         {line.discount > 0
                           ? ` · −${formatVnd(line.discount)}`
                           : ""}
@@ -299,7 +305,8 @@ export default function CheckoutPage() {
                       )}
                     </p>
                   </div>
-                ))
+                  );
+                })
               : items.map((item) => (
                   <div key={item.id} className="flex items-center gap-3">
                     <div className="flex h-14 w-16 shrink-0 items-center justify-center rounded-lg bg-black/30">

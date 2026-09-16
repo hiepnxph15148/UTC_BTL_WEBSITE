@@ -213,7 +213,7 @@ export default function AdminProductDetailPage() {
   };
 
   const lookupName = (list: LookupDto[], id: string) =>
-    list.find((l) => l.id === id)?.name || id.slice(0, 8);
+    list.find((l) => l.id === id)?.name || "—";
 
   if (!isAuthenticated) {
     return (
