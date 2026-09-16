@@ -9,27 +9,30 @@ import {
   type ShoeCategory,
 } from "@/data/shoes";
 import { useCatalogProducts } from "@/hooks/useCatalogProducts";
+import { useLocale } from "@/context/LocaleContext";
+import { categoryBlurbKey, categoryLabelKey } from "@/i18n/messages";
 
 const validIds = new Set(categorySections.map((c) => c.id));
 
 export default function CategoryCollectionPage() {
   const params = useParams<{ category: string }>();
   const category = params.category;
+  const { t } = useLocale();
+  const { shoes, loading } = useCatalogProducts({ take: 100 });
 
   if (!validIds.has(category as ShoeCategory)) notFound();
 
   const cat = categorySections.find((c) => c.id === category)!;
-  const { shoes, loading } = useCatalogProducts({ take: 100 });
   const list = shoes.filter((shoe) => shoe.category === cat.id);
 
   return (
     <PageShell
-      title={cat.label}
+      title={t(categoryLabelKey(cat.id))}
       accent={cat.accent}
-      subtitle={`${cat.blurb} · ${list.length} sản phẩm`}
+      subtitle={`${t(categoryBlurbKey(cat.id))} · ${t("collections.count", { count: list.length })}`}
     >
       {loading ? (
-        <p className="mb-4 text-sm text-white/50">Đang tải…</p>
+        <p className="mb-4 text-sm text-white/50">{t("common.loading")}</p>
       ) : null}
 
       <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
@@ -37,7 +40,7 @@ export default function CategoryCollectionPage() {
           href="/collections"
           className="text-sm font-semibold text-white/65 transition-colors hover:text-white"
         >
-          ← Back to Collections
+          {t("collections.back")}
         </Link>
         <nav className="flex flex-wrap gap-2">
           {categorySections.map((item) => {
@@ -53,7 +56,7 @@ export default function CategoryCollectionPage() {
                   color: active ? "#fff" : "rgba(255,255,255,0.65)",
                 }}
               >
-                {item.label}
+                {t(categoryLabelKey(item.id))}
               </Link>
             );
           })}

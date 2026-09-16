@@ -1,15 +1,23 @@
 /** Client-side form helpers for storefront. */
 
+import type { MessageKey } from "@/i18n/messages";
+
 export const PASSWORD_MIN_LENGTH = 6;
 export const NAME_MIN_LENGTH = 2;
 export const MESSAGE_MIN_LENGTH = 5;
 export const MESSAGE_MAX_LENGTH = 4000;
 export const PHONE_MAX_LENGTH = 30;
 export const ADDRESS_MIN_LENGTH = 5;
+export const REASON_MIN_LENGTH = 3;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-/** VN mobile: 0xxxxxxxxx hoặc +84xxxxxxxxx (10 số sau mã vùng). */
+/** VN mobile: 0xxxxxxxxx or +84xxxxxxxxx. */
 const VN_PHONE_RE = /^(?:\+84|84|0)(?:3|5|7|8|9)\d{8}$/;
+
+export type ValidationIssue = {
+  key: MessageKey;
+  vars?: Record<string, string | number>;
+};
 
 export function normalizePhone(value: string): string {
   return value.replace(/[\s.\-()]/g, "").trim();
@@ -34,36 +42,64 @@ export function isNonEmpty(value: string, min = 1): boolean {
   return value.trim().length >= min;
 }
 
-export function passwordError(value: string): string | null {
-  if (!value) return "Vui lòng nhập mật khẩu.";
+export function passwordError(value: string): ValidationIssue | null {
+  if (!value) return { key: "validation.passwordRequired" };
   if (value.length < PASSWORD_MIN_LENGTH) {
-    return `Mật khẩu tối thiểu ${PASSWORD_MIN_LENGTH} ký tự.`;
+    return { key: "validation.passwordMin", vars: { min: PASSWORD_MIN_LENGTH } };
   }
-  if (value.length > 128) return "Mật khẩu tối đa 128 ký tự.";
+  if (value.length > 128) return { key: "validation.passwordMax" };
   return null;
 }
 
-export function emailError(value: string): string | null {
-  if (!value.trim()) return "Vui lòng nhập email.";
-  if (!isValidEmail(value)) return "Email không hợp lệ.";
+export function emailError(value: string): ValidationIssue | null {
+  if (!value.trim()) return { key: "validation.emailRequired" };
+  if (!isValidEmail(value)) return { key: "validation.emailInvalid" };
   return null;
 }
 
-export function phoneError(value: string): string | null {
-  if (!value.trim()) return "Vui lòng nhập số điện thoại.";
-  if (!isValidVnPhone(value)) {
-    return "SĐT không hợp lệ (vd: 0901234567).";
-  }
+export function phoneError(value: string): ValidationIssue | null {
+  if (!value.trim()) return { key: "validation.phoneRequired" };
+  if (!isValidVnPhone(value)) return { key: "validation.phoneInvalid" };
   return null;
 }
 
 export function nameError(
   value: string,
-  label = "Họ tên",
   min = NAME_MIN_LENGTH,
-): string | null {
+): ValidationIssue | null {
   if (!isNonEmpty(value, min)) {
-    return `${label} tối thiểu ${min} ký tự.`;
+    return { key: "validation.nameMin", vars: { min } };
+  }
+  return null;
+}
+
+export function recipientError(
+  value: string,
+  min = NAME_MIN_LENGTH,
+): ValidationIssue | null {
+  if (!isNonEmpty(value, min)) {
+    return { key: "validation.recipientMin", vars: { min } };
+  }
+  return null;
+}
+
+export function addressError(
+  value: string,
+  min = ADDRESS_MIN_LENGTH,
+): ValidationIssue | null {
+  if (!isNonEmpty(value, min)) {
+    return { key: "validation.addressMin", vars: { min } };
+  }
+  return null;
+}
+
+export function messageError(value: string): ValidationIssue | null {
+  const trimmed = value.trim();
+  if (trimmed.length < MESSAGE_MIN_LENGTH) {
+    return { key: "validation.messageMin", vars: { min: MESSAGE_MIN_LENGTH } };
+  }
+  if (trimmed.length > MESSAGE_MAX_LENGTH) {
+    return { key: "validation.messageMax", vars: { max: MESSAGE_MAX_LENGTH } };
   }
   return null;
 }
@@ -71,8 +107,21 @@ export function nameError(
 export function confirmPasswordError(
   password: string,
   confirm: string,
-): string | null {
-  if (!confirm) return "Vui lòng nhập lại mật khẩu.";
-  if (password !== confirm) return "Mật khẩu nhập lại không khớp.";
+): ValidationIssue | null {
+  if (!confirm) return { key: "validation.confirmRequired" };
+  if (password !== confirm) return { key: "validation.confirmMismatch" };
   return null;
+}
+
+export function usernameError(value: string): ValidationIssue | null {
+  if (!isNonEmpty(value)) return { key: "validation.usernameRequired" };
+  return null;
+}
+
+export function formatIssue(
+  t: (key: MessageKey, vars?: Record<string, string | number>) => string,
+  issue: ValidationIssue | null,
+): string | null {
+  if (!issue) return null;
+  return t(issue.key, issue.vars);
 }

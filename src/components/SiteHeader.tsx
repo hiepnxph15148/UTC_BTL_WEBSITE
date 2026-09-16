@@ -4,23 +4,27 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
+import { useLocale } from "@/context/LocaleContext";
 import { storeApi, type NotificationDto } from "@/lib/api";
+import type { MessageKey } from "@/i18n/messages";
 
-const navLinks = [
-  { label: "Home", href: "/" },
-  { label: "Offers", href: "/offers" },
-  { label: "Collections", href: "/collections" },
-  { label: "Orders", href: "/orders" },
-  { label: "Returns", href: "/returns" },
-  { label: "Contact", href: "/contact" },
-] as const;
+const navLinks: { key: MessageKey; href: string }[] = [
+  { key: "nav.home", href: "/" },
+  { key: "nav.offers", href: "/offers" },
+  { key: "nav.collections", href: "/collections" },
+  { key: "nav.orders", href: "/orders" },
+  { key: "nav.returns", href: "/returns" },
+  { key: "nav.contact", href: "/contact" },
+];
 
 export default function SiteHeader() {
   const pathname = usePathname();
   const { count, hydrated } = useCart();
   const { isAuthenticated, hydrated: authHydrated, logout, session } = useAuth();
+  const { t, dateLocale } = useLocale();
   const [menuOpen, setMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationDto[]>([]);
@@ -28,6 +32,10 @@ export default function SiteHeader() {
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
+
+  const isAdminUser =
+    session?.userName?.toLowerCase() === "admin" ||
+    session?.userName?.toLowerCase() === "store-manager";
 
   const loadNotifications = useCallback(async () => {
     if (!isAuthenticated) {
@@ -75,7 +83,7 @@ export default function SiteHeader() {
 
   return (
     <header className="relative z-50 grid shrink-0 grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-4 sm:gap-4 sm:px-6 sm:py-5 md:px-10 md:py-7 lg:gap-6 lg:px-16 lg:py-8">
-      <Link href="/" aria-label="Về trang chủ" onClick={() => setMenuOpen(false)}>
+      <Link href="/" aria-label={t("nav.homeAria")} onClick={() => setMenuOpen(false)}>
         <Image
           src={encodeURI("/logo/image 1.png")}
           alt="Nike"
@@ -97,7 +105,7 @@ export default function SiteHeader() {
                 : "transition-colors hover:text-white"
             }
           >
-            {link.label}
+            {t(link.key)}
           </Link>
         ))}
       </nav>
@@ -113,7 +121,7 @@ export default function SiteHeader() {
           />
           <input
             type="search"
-            placeholder="Search"
+            placeholder={t("nav.search")}
             className="w-20 bg-transparent text-sm font-semibold text-white placeholder:text-white/65 focus:outline-none md:w-28 lg:w-36"
           />
         </label>
@@ -122,7 +130,7 @@ export default function SiteHeader() {
           <div className="relative" ref={notifRef}>
             <button
               type="button"
-              aria-label="Thông báo"
+              aria-label={t("nav.notifications")}
               onClick={() => {
                 setNotifOpen((o) => !o);
                 void loadNotifications();
@@ -139,7 +147,7 @@ export default function SiteHeader() {
             {notifOpen ? (
               <div className="absolute right-0 top-full z-50 mt-2 w-80 max-w-[90vw] rounded-xl border border-white/10 bg-[#1a1a22] p-2 shadow-xl">
                 <p className="px-2 py-1 text-xs font-bold uppercase tracking-wide text-white/40">
-                  Thông báo
+                  {t("nav.notifications")}
                 </p>
                 <ul className="max-h-72 overflow-y-auto">
                   {notifications.map((n) => (
@@ -152,9 +160,9 @@ export default function SiteHeader() {
                             n.isRead ? "text-white/50" : "text-white"
                           }`}
                         >
-                          <p>{n.message || "Thông báo đơn hàng"}</p>
+                          <p>{n.message || t("nav.notifOrder")}</p>
                           <p className="mt-0.5 text-[11px] text-white/35">
-                            {n.at ? new Date(n.at).toLocaleString("vi-VN") : ""}
+                            {n.at ? new Date(n.at).toLocaleString(dateLocale) : ""}
                           </p>
                         </Link>
                       ) : (
@@ -165,9 +173,9 @@ export default function SiteHeader() {
                             n.isRead ? "text-white/50" : "text-white"
                           }`}
                         >
-                          <p>{n.message || "Thông báo"}</p>
+                          <p>{n.message || t("nav.notifGeneric")}</p>
                           <p className="mt-0.5 text-[11px] text-white/35">
-                            {n.at ? new Date(n.at).toLocaleString("vi-VN") : ""}
+                            {n.at ? new Date(n.at).toLocaleString(dateLocale) : ""}
                           </p>
                         </button>
                       )}
@@ -175,7 +183,7 @@ export default function SiteHeader() {
                   ))}
                   {!notifications.length ? (
                     <li className="px-3 py-6 text-center text-sm text-white/45">
-                      Không có thông báo
+                      {t("nav.notifEmpty")}
                     </li>
                   ) : null}
                 </ul>
@@ -184,46 +192,22 @@ export default function SiteHeader() {
           </div>
         ) : null}
 
-        {authHydrated ? (
-          isAuthenticated ? (
-            <div className="hidden items-center gap-3 md:flex">
-              {session?.userName?.toLowerCase() === "admin" ||
-              session?.userName?.toLowerCase() === "store-manager" ? (
-                <Link
-                  href="/admin"
-                  className="text-xs font-semibold text-nike-accent hover:brightness-110"
-                >
-                  Dashboard
-                </Link>
-              ) : null}
-              <Link
-                href="/account"
-                className="text-xs font-semibold text-white/70 hover:text-white"
-              >
-                Account
-              </Link>
-              <button
-                type="button"
-                onClick={logout}
-                className="text-xs font-semibold text-white/70 hover:text-white"
-                title={session?.userName}
-              >
-                Logout
-              </button>
-            </div>
-          ) : (
-            <Link
-              href="/login"
-              className="hidden text-xs font-semibold text-white/70 hover:text-white md:inline"
-            >
-              Login
-            </Link>
-          )
+        {authHydrated && isAuthenticated && isAdminUser ? (
+          <Link
+            href="/admin"
+            className="hidden text-xs font-semibold text-nike-accent hover:brightness-110 md:inline"
+          >
+            {t("nav.dashboard")}
+          </Link>
         ) : null}
 
         <Link
           href="/cart"
-          aria-label={`Giỏ hàng${hydrated && count > 0 ? `, ${count} sản phẩm` : ""}`}
+          aria-label={
+            hydrated && count > 0
+              ? t("nav.cartAriaCount", { count })
+              : t("nav.cartAria")
+          }
           className="relative inline-flex cursor-pointer"
           onClick={() => setMenuOpen(false)}
         >
@@ -243,7 +227,7 @@ export default function SiteHeader() {
 
         <button
           type="button"
-          aria-label={menuOpen ? "Đóng menu" : "Mở menu"}
+          aria-label={menuOpen ? t("nav.closeMenu") : t("nav.openMenu")}
           aria-expanded={menuOpen}
           className="cursor-pointer md:hidden"
           onClick={() => setMenuOpen((open) => !open)}
@@ -257,20 +241,7 @@ export default function SiteHeader() {
           />
         </button>
 
-        <button
-          type="button"
-          aria-label="Menu"
-          className="hidden cursor-pointer md:inline-flex"
-          onClick={() => setMenuOpen((open) => !open)}
-        >
-          <Image
-            src={encodeURI("/icon/menu (2).png")}
-            alt=""
-            width={26}
-            height={26}
-            className="h-6 w-6 mix-blend-lighten transition-transform hover:scale-110 lg:h-[26px] lg:w-[26px]"
-          />
-        </button>
+        <LanguageSwitcher compact />
       </div>
 
       {menuOpen ? (
@@ -287,7 +258,7 @@ export default function SiteHeader() {
                 }`}
                 onClick={() => setMenuOpen(false)}
               >
-                {link.label}
+                {t(link.key)}
               </Link>
             ))}
             <Link
@@ -295,8 +266,41 @@ export default function SiteHeader() {
               className="text-base text-white/75"
               onClick={() => setMenuOpen(false)}
             >
-              Cart {hydrated && count > 0 ? `(${count})` : ""}
+              {t("nav.cart")} {hydrated && count > 0 ? `(${count})` : ""}
             </Link>
+            {authHydrated ? (
+              isAuthenticated ? (
+                <>
+                  {isAdminUser ? (
+                    <Link
+                      href="/admin"
+                      className="text-base text-nike-accent"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      {t("nav.dashboard")}
+                    </Link>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      logout();
+                    }}
+                    className="text-left text-base text-white/75"
+                  >
+                    {t("nav.logout")}
+                  </button>
+                </>
+              ) : (
+                <Link
+                  href="/login"
+                  className="text-base text-white/75"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {t("nav.login")}
+                </Link>
+              )
+            ) : null}
           </nav>
         </div>
       ) : null}

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { slideClass } from "@/components/HeroStage";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
+import { useLocale } from "@/context/LocaleContext";
 import type { ShoeProduct } from "@/data/shoes";
 
 type Props = {
@@ -15,6 +16,7 @@ export default function ProductPanel({ shoes, activeIndex }: Props) {
   const shoe = shoes[activeIndex];
   const { addItem } = useCart();
   const { isAuthenticated, openLoginModal } = useAuth();
+  const { t } = useLocale();
   const [color, setColor] = useState(0);
   const [size, setSize] = useState(0);
   const [added, setAdded] = useState(false);
@@ -27,9 +29,7 @@ export default function ProductPanel({ shoes, activeIndex }: Props) {
 
   const onBuy = async () => {
     if (!isAuthenticated) {
-      openLoginModal(
-        "Đăng nhập để thêm sản phẩm vào giỏ hàng và đồng bộ với API.",
-      );
+      openLoginModal(t("product.needLogin"));
       return;
     }
 
@@ -42,9 +42,7 @@ export default function ProductPanel({ shoes, activeIndex }: Props) {
     });
     if (fail) {
       if (fail === "__NEED_LOGIN__" || /đăng nhập|SKU|login/i.test(fail)) {
-        openLoginModal(
-          "Đăng nhập để thêm sản phẩm vào giỏ hàng và đồng bộ với API.",
-        );
+        openLoginModal(t("product.needLogin"));
       } else {
         window.alert(fail);
       }
@@ -72,13 +70,13 @@ export default function ProductPanel({ shoes, activeIndex }: Props) {
 
       <div className="flex flex-wrap items-end gap-6 sm:gap-8">
         <div>
-          <p className="text-sm font-semibold text-white">Colors</p>
+          <p className="text-sm font-semibold text-white">{t("product.colors")}</p>
           <div className="mt-2.5 flex items-center gap-3 sm:mt-3.5 sm:gap-3.5">
             {shoe.colors.map((value, index) => (
               <button
                 key={`${shoe.id}-${value}`}
                 type="button"
-                aria-label={`Màu ${index + 1}`}
+                aria-label={t("product.colorAria", { n: index + 1 })}
                 aria-pressed={color === index}
                 onClick={() => setColor(index)}
                 className={`h-[15px] w-[15px] cursor-pointer rounded-full transition-all ${
@@ -93,7 +91,7 @@ export default function ProductPanel({ shoes, activeIndex }: Props) {
         </div>
 
         <div>
-          <p className="text-sm font-semibold text-white">Size</p>
+          <p className="text-sm font-semibold text-white">{t("product.size")}</p>
           <div className="mt-2.5 flex items-center gap-2.5 sm:mt-3.5 sm:gap-3">
             {shoe.sizes.map((value, index) => (
               <button
@@ -124,7 +122,7 @@ export default function ProductPanel({ shoes, activeIndex }: Props) {
             : `linear-gradient(90deg, ${shoe.accent}, #ff6b95)`,
         }}
       >
-        {added ? "ADDED" : "BUY"}
+        {added ? t("product.added") : t("product.buy")}
       </button>
     </div>
   );

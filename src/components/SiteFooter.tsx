@@ -1,64 +1,72 @@
+"use client";
+
 import Link from "next/link";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useLocale } from "@/context/LocaleContext";
+import type { MessageKey } from "@/i18n/messages";
 
-const columns = [
-  {
-    title: "Resources",
-    links: [
-      "Gift Cards",
-      "Corporate Sales",
-      "Find a Store",
-      "Membership",
-      "Nike Journal",
-      "Site Feedback",
-    ],
-  },
-  {
-    title: "Help",
-    links: [
-      "Get Help",
-      "Order Status",
-      "Shipping and Delivery",
-      "Returns",
-      "Order Cancellation",
-      "Payment Options",
-      "Gift Card Balance",
-      "Contact Us",
-    ],
-  },
-  {
-    title: "Company",
-    links: [
-      "About Nike",
-      "News",
-      "Careers",
-      "Investors",
-      "Purpose",
-      "Sustainability",
-      "Accessibility",
-    ],
-  },
-  {
-    title: "Promotions & Discounts",
-    links: [
-      "Student",
-      "Military",
-      "Teacher",
-      "First Responders & Medical Professionals",
-      "Birthday",
-    ],
-  },
-] as const;
+const columns: { title: MessageKey; links: { key: MessageKey; href: string }[] }[] =
+  [
+    {
+      title: "footer.resources",
+      links: [
+        { key: "footer.giftCards", href: "#" },
+        { key: "footer.corporate", href: "#" },
+        { key: "footer.findStore", href: "#" },
+        { key: "footer.membership", href: "#" },
+        { key: "footer.journal", href: "#" },
+        { key: "footer.feedback", href: "#" },
+      ],
+    },
+    {
+      title: "footer.help",
+      links: [
+        { key: "footer.getHelp", href: "#" },
+        { key: "footer.orderStatus", href: "/orders" },
+        { key: "footer.shipping", href: "#" },
+        { key: "footer.returns", href: "/returns" },
+        { key: "footer.cancel", href: "#" },
+        { key: "footer.payment", href: "#" },
+        { key: "footer.giftBalance", href: "#" },
+        { key: "footer.contactUs", href: "/contact" },
+      ],
+    },
+    {
+      title: "footer.company",
+      links: [
+        { key: "footer.about", href: "#" },
+        { key: "footer.news", href: "#" },
+        { key: "footer.careers", href: "#" },
+        { key: "footer.investors", href: "#" },
+        { key: "footer.purpose", href: "#" },
+        { key: "footer.sustain", href: "#" },
+        { key: "footer.a11y", href: "#" },
+      ],
+    },
+    {
+      title: "footer.promos",
+      links: [
+        { key: "footer.student", href: "/offers" },
+        { key: "footer.military", href: "/offers" },
+        { key: "footer.teacher", href: "/offers" },
+        { key: "footer.firstResponders", href: "/offers" },
+        { key: "footer.birthday", href: "/offers" },
+      ],
+    },
+  ];
 
-const legalLinks = [
-  "Guides",
-  "Terms of Sale",
-  "Terms of Use",
-  "Nike Privacy Policy",
-  "Your Privacy Choices",
-  "CA Supply Chains Act",
-] as const;
+const legalLinks: MessageKey[] = [
+  "footer.guides",
+  "footer.termsSale",
+  "footer.termsUse",
+  "footer.privacy",
+  "footer.choices",
+  "footer.ca",
+];
 
 export default function SiteFooter() {
+  const { t } = useLocale();
+
   return (
     <footer className="mt-auto w-full border-t border-white/10 bg-[#121218] text-white">
       <div className="mx-auto w-full max-w-[1200px] px-4 py-10 sm:px-6 md:px-10 lg:px-16 lg:py-12">
@@ -66,16 +74,16 @@ export default function SiteFooter() {
           {columns.map((column) => (
             <div key={column.title}>
               <h3 className="text-sm font-semibold tracking-wide text-white">
-                {column.title}
+                {t(column.title)}
               </h3>
               <ul className="mt-4 space-y-2.5">
-                {column.links.map((label) => (
-                  <li key={label}>
+                {column.links.map((link) => (
+                  <li key={link.key}>
                     <Link
-                      href={label === "Contact Us" ? "/contact" : "#"}
+                      href={link.href}
                       className="text-sm text-white/55 transition-colors hover:text-white"
                     >
-                      {label}
+                      {t(link.key)}
                     </Link>
                   </li>
                 ))}
@@ -88,15 +96,15 @@ export default function SiteFooter() {
       <div className="border-t border-white/10">
         <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 py-5 text-xs text-white/55 sm:px-6 md:flex-row md:flex-wrap md:items-center md:justify-between md:px-10 lg:px-16">
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-            <p>© {new Date().getFullYear()} Nike, Inc. All Rights Reserved</p>
-            {legalLinks.map((label) => (
+            <p>{t("footer.rights", { year: new Date().getFullYear() })}</p>
+            {legalLinks.map((key) => (
               <Link
-                key={label}
+                key={key}
                 href="#"
                 className="inline-flex items-center gap-1 transition-colors hover:text-white"
               >
-                {label}
-                {label === "Guides" ? (
+                {t(key)}
+                {key === "footer.guides" ? (
                   <span aria-hidden className="text-[10px]">
                     ▾
                   </span>
@@ -105,12 +113,15 @@ export default function SiteFooter() {
             ))}
           </div>
 
-          <p className="inline-flex items-center gap-2 font-medium text-white">
-            <span aria-hidden className="text-base leading-none">
-              🌐
-            </span>
-            United States
-          </p>
+          <div className="inline-flex items-center gap-3 font-medium text-white">
+            <LanguageSwitcher compact />
+            <p className="inline-flex items-center gap-2">
+              <span aria-hidden className="text-base leading-none">
+                🌐
+              </span>
+              {t("footer.region")}
+            </p>
+          </div>
         </div>
       </div>
     </footer>

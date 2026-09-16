@@ -1,6 +1,9 @@
+"use client";
+
 import Image from "next/image";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
+import { useLocale } from "@/context/LocaleContext";
 
 type Props = {
   children: React.ReactNode;
@@ -15,6 +18,8 @@ export default function PageShell({
   subtitle,
   accent = "#ed3b6b",
 }: Props) {
+  const { t } = useLocale();
+
   return (
     <main className="relative flex min-h-dvh w-full flex-col overflow-clip bg-[#121218] text-white">
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -61,7 +66,7 @@ export default function PageShell({
               className="mb-3 text-xs font-bold uppercase tracking-[0.28em]"
               style={{ color: accent }}
             >
-              Nike Store
+              {t("common.store")}
             </p>
             <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
               {title}

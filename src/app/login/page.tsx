@@ -5,13 +5,15 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useEffect, useState } from "react";
 import PageShell from "@/components/PageShell";
 import { useAuth } from "@/context/AuthContext";
+import { useLocale } from "@/context/LocaleContext";
 import { ApiError } from "@/lib/api";
 import {
   PASSWORD_MIN_LENGTH,
   confirmPasswordError,
   emailError,
-  isNonEmpty,
+  formatIssue,
   passwordError,
+  usernameError,
 } from "@/lib/validation";
 
 function resolveAfterLogin(userName: string, nextParam: string | null) {
@@ -26,6 +28,7 @@ function LoginForm() {
   const params = useSearchParams();
   const nextParam = params.get("next");
   const { login, register, isAuthenticated, session } = useAuth();
+  const { t } = useLocale();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [userName, setUserName] = useState("");
   const [email, setEmail] = useState("");
@@ -45,30 +48,34 @@ function LoginForm() {
     e.preventDefault();
     setError(null);
 
-    if (!isNonEmpty(userName)) {
-      setError("Vui lòng nhập username.");
+    const userMsg = formatIssue(t, usernameError(userName));
+    if (userMsg) {
+      setError(userMsg);
       return;
     }
 
     if (mode === "login") {
       if (!password) {
-        setError("Vui lòng nhập mật khẩu.");
+        setError(t("validation.passwordRequired"));
         return;
       }
     } else {
-      const pwdErr = passwordError(password);
-      if (pwdErr) {
-        setError(pwdErr);
+      const pwdMsg = formatIssue(t, passwordError(password));
+      if (pwdMsg) {
+        setError(pwdMsg);
         return;
       }
-      const mailErr = emailError(email);
-      if (mailErr) {
-        setError(mailErr);
+      const mailMsg = formatIssue(t, emailError(email));
+      if (mailMsg) {
+        setError(mailMsg);
         return;
       }
-      const confirmErr = confirmPasswordError(password, confirmPassword);
-      if (confirmErr) {
-        setError(confirmErr);
+      const confirmMsg = formatIssue(
+        t,
+        confirmPasswordError(password, confirmPassword),
+      );
+      if (confirmMsg) {
+        setError(confirmMsg);
         return;
       }
     }
@@ -91,7 +98,7 @@ function LoginForm() {
           ? err.message
           : err instanceof Error
             ? err.message
-            : "Đăng nhập thất bại";
+            : t("login.fail");
       setError(message);
     } finally {
       setBusy(false);
@@ -100,9 +107,9 @@ function LoginForm() {
 
   return (
     <PageShell
-      title={mode === "login" ? "Đăng nhập" : "Đăng ký"}
+      title={mode === "login" ? t("common.login") : t("common.register")}
       accent="#ed3b6b"
-      subtitle="Admin vào /admin · khách vào store. Giỏ/checkout cần đăng nhập."
+      subtitle={t("login.subtitle")}
     >
       <form
         onSubmit={onSubmit}
@@ -117,7 +124,7 @@ function LoginForm() {
 
         <label className="block space-y-1.5">
           <span className="text-xs font-semibold uppercase tracking-wide text-white/50">
-            Username
+            {t("common.username")}
           </span>
           <input
             required
@@ -131,7 +138,7 @@ function LoginForm() {
         {mode === "register" ? (
           <label className="block space-y-1.5">
             <span className="text-xs font-semibold uppercase tracking-wide text-white/50">
-              Email
+              {t("common.email")}
             </span>
             <input
               required
@@ -146,7 +153,7 @@ function LoginForm() {
 
         <label className="block space-y-1.5">
           <span className="text-xs font-semibold uppercase tracking-wide text-white/50">
-            Password
+            {t("common.password")}
           </span>
           <input
             required
@@ -159,7 +166,7 @@ function LoginForm() {
           />
           {mode === "register" ? (
             <span className="text-[11px] text-white/40">
-              Tối thiểu {PASSWORD_MIN_LENGTH} ký tự
+              {t("validation.passwordHint", { min: PASSWORD_MIN_LENGTH })}
             </span>
           ) : null}
         </label>
@@ -167,7 +174,7 @@ function LoginForm() {
         {mode === "register" ? (
           <label className="block space-y-1.5">
             <span className="text-xs font-semibold uppercase tracking-wide text-white/50">
-              Nhập lại password
+              {t("validation.confirmPassword")}
             </span>
             <input
               required
@@ -186,7 +193,11 @@ function LoginForm() {
           disabled={busy}
           className="w-full rounded-xl bg-nike-accent py-3 text-sm font-bold text-white disabled:opacity-70"
         >
-          {busy ? "Đang xử lý…" : mode === "login" ? "Đăng nhập" : "Tạo tài khoản"}
+          {busy
+            ? t("common.processing")
+            : mode === "login"
+              ? t("common.login")
+              : t("login.create")}
         </button>
 
         <button
@@ -198,14 +209,12 @@ function LoginForm() {
           }}
           className="w-full text-sm text-white/60 hover:text-white"
         >
-          {mode === "login"
-            ? "Chưa có tài khoản? Đăng ký"
-            : "Đã có tài khoản? Đăng nhập"}
+          {mode === "login" ? t("login.needAccount") : t("login.hasAccount")}
         </button>
 
         <p className="text-center text-xs text-white/40">
           <Link href="/" className="underline">
-            Về trang chủ
+            {t("login.home")}
           </Link>
         </p>
       </form>
@@ -213,15 +222,18 @@ function LoginForm() {
   );
 }
 
+function LoginFallback() {
+  const { t } = useLocale();
+  return (
+    <PageShell title={t("common.login")} subtitle={t("common.loading")}>
+      <p className="text-white/60">{t("common.loading")}</p>
+    </PageShell>
+  );
+}
+
 export default function LoginPage() {
   return (
-    <Suspense
-      fallback={
-        <PageShell title="Đăng nhập" subtitle="Đang tải…">
-          <p className="text-white/60">Loading…</p>
-        </PageShell>
-      }
-    >
+    <Suspense fallback={<LoginFallback />}>
       <LoginForm />
     </Suspense>
   );

@@ -3,64 +3,71 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useLocale } from "@/context/LocaleContext";
+import type { MessageKey } from "@/i18n/messages";
 
 const links = [
-  { href: "/admin", label: "Dashboard", icon: "◆", match: "exact" as const },
+  { href: "/admin", key: "admin.dash" as const, icon: "◆", match: "exact" as const },
   {
     href: "/admin/products",
-    label: "All Products",
+    key: "admin.products" as const,
     icon: "▦",
     match: "products" as const,
   },
   {
     href: "/admin/products/new",
-    label: "Create Product",
+    key: "admin.createProduct" as const,
     icon: "+",
     match: "exact" as const,
   },
   {
     href: "/admin/orders",
-    label: "Order List",
+    key: "admin.orders" as const,
     icon: "☰",
     match: "prefix" as const,
   },
   {
     href: "/admin/inventory",
-    label: "Inventory",
+    key: "admin.inventory" as const,
     icon: "▤",
     match: "prefix" as const,
   },
   {
     href: "/admin/returns",
-    label: "Returns",
+    key: "admin.returns" as const,
     icon: "↺",
     match: "prefix" as const,
   },
   {
     href: "/admin/promotions",
-    label: "Promotions",
+    key: "admin.promos" as const,
     icon: "%",
     match: "prefix" as const,
   },
   {
     href: "/admin/categories",
-    label: "Lookups",
+    key: "admin.lookups" as const,
     icon: "▣",
     match: "categories" as const,
   },
   {
     href: "/admin/users",
-    label: "Users",
+    key: "admin.users" as const,
     icon: "☺",
     match: "prefix" as const,
   },
   {
     href: "/admin/feedback",
-    label: "Góp ý & phản ánh",
+    key: "admin.feedback" as const,
     icon: "✉",
     match: "prefix" as const,
   },
-] as const;
+] satisfies {
+  href: string;
+  key: MessageKey;
+  icon: string;
+  match: "exact" | "products" | "prefix" | "categories";
+}[];
 
 function isActive(pathname: string, link: (typeof links)[number]) {
   if (link.match === "exact") return pathname === link.href;
@@ -83,6 +90,7 @@ function isActive(pathname: string, link: (typeof links)[number]) {
 
 export default function AdminSidebar() {
   const pathname = usePathname();
+  const { t } = useLocale();
 
   return (
     <aside className="flex w-full flex-col border-b border-white/10 bg-[#16161e] lg:w-60 lg:border-b-0 lg:border-r">
@@ -115,14 +123,14 @@ export default function AdminSidebar() {
               }`}
             >
               <span className="text-xs opacity-80">{link.icon}</span>
-              {link.label}
+              {t(link.key)}
             </Link>
           );
         })}
       </nav>
 
       <div className="mt-auto hidden border-t border-white/10 p-4 text-xs text-white/40 lg:block">
-        Chỉ truy cập qua <span className="text-white/70">/admin</span>
+        {t("admin.access")} <span className="text-white/70">/admin</span>
       </div>
     </aside>
   );
