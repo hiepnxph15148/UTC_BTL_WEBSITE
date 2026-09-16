@@ -76,7 +76,7 @@ export default function RevenueChart() {
   ];
 
   return (
-    <div className="admin-card flex h-full flex-col p-5">
+    <div className="admin-card flex h-full min-w-0 flex-col overflow-hidden p-5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-bold">Sale Graph</h2>
         <div className="flex rounded-lg border border-white/10 bg-black/20 p-1">
