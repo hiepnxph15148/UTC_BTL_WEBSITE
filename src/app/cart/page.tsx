@@ -42,9 +42,6 @@ export default function CartPage() {
               {error}
             </p>
           ) : null}
-          {syncing ? (
-            <p className="mb-3 text-xs text-white/45">{t("cart.syncing")}</p>
-          ) : null}
           {!isAuthenticated && items.length > 0 ? (
             <p className="mb-4 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/65">
               <Link href="/login?next=/cart" className="font-semibold text-nike-accent underline">
@@ -96,10 +93,15 @@ export default function CartPage() {
                   <p className="mt-2 font-semibold">{item.price}</p>
 
                   <div className="mt-3 flex flex-wrap items-center gap-3">
-                    <div className="inline-flex items-center rounded-full border border-white/15">
+                    <div
+                      className={`inline-flex items-center rounded-full border border-white/15 ${
+                        syncing ? "pointer-events-none opacity-50" : ""
+                      }`}
+                    >
                       <button
                         type="button"
                         className="h-9 w-9 cursor-pointer text-lg"
+                        disabled={syncing}
                         onClick={() => void updateQty(item.id, item.qty - 1)}
                         aria-label={t("cart.decrease")}
                       >
@@ -111,6 +113,7 @@ export default function CartPage() {
                       <button
                         type="button"
                         className="h-9 w-9 cursor-pointer text-lg"
+                        disabled={syncing}
                         onClick={() => void updateQty(item.id, item.qty + 1)}
                         aria-label={t("cart.increase")}
                       >
@@ -119,8 +122,9 @@ export default function CartPage() {
                     </div>
                     <button
                       type="button"
+                      disabled={syncing}
                       onClick={() => void removeItem(item.id)}
-                      className="cursor-pointer text-sm text-white/55 underline hover:text-white"
+                      className="cursor-pointer text-sm text-white/55 underline hover:text-white disabled:opacity-50"
                     >
                       {t("cart.remove")}
                     </button>

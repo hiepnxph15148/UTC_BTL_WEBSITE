@@ -7,8 +7,8 @@ import { useRouter } from "next/navigation";
 import PageShell from "@/components/PageShell";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
+import { formatVnd, storeApi, type QuoteDto, humanizeStoreError } from "@/lib/api";
 import { useLocale } from "@/context/LocaleContext";
-import { formatVnd, storeApi, type QuoteDto } from "@/lib/api";
 import {
   ADDRESS_MIN_LENGTH,
   addressError,
@@ -48,7 +48,7 @@ export default function CheckoutPage() {
         setPhone(preferred.phone || "");
         setAddress(preferred.fullAddress || "");
       } catch {
-        // ignore — user có thể nhập mới
+        // ignore â€” user cÃ³ thá»ƒ nháº­p má»›i
       }
     })();
   }, [isAuthenticated]);
@@ -90,7 +90,11 @@ export default function CheckoutPage() {
       setQuote(next);
     } catch (err) {
       setQuote(null);
-      setError(err instanceof Error ? err.message : t("checkout.couponFail"));
+      setError(
+        humanizeStoreError(
+          err instanceof Error ? err.message : t("checkout.couponFail"),
+        ),
+      );
     } finally {
       setQuoting(false);
     }
@@ -126,7 +130,11 @@ export default function CheckoutPage() {
       await clearCart();
       router.push(`/orders/${order.order.id}?invoice=1`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("checkout.orderFail"));
+      setError(
+        humanizeStoreError(
+          err instanceof Error ? err.message : t("checkout.orderFail"),
+        ),
+      );
     } finally {
       setPaying(false);
     }
@@ -287,9 +295,9 @@ export default function CheckoutPage() {
                         {line.productName || line.code}
                       </p>
                       <p className="text-xs text-white/50">
-                        {line.code} · x{line.quantity}
+                        {line.code} Â· x{line.quantity}
                         {line.discount > 0
-                          ? ` · −${formatVnd(line.discount)}`
+                          ? ` Â· âˆ’${formatVnd(line.discount)}`
                           : ""}
                       </p>
                     </div>
@@ -316,7 +324,7 @@ export default function CheckoutPage() {
                         {item.name} {item.nameAccent}
                       </p>
                       <p className="text-xs text-white/50">
-                        {item.size ? `Size ${item.size} · ` : ""}x{item.qty}
+                        {item.size ? `Size ${item.size} Â· ` : ""}x{item.qty}
                       </p>
                     </div>
                     <p className="text-sm font-semibold">
@@ -338,7 +346,7 @@ export default function CheckoutPage() {
               <span className="font-semibold text-[#c6e600]">
                 {quote
                   ? quote.discount > 0
-                    ? `−${formatVnd(quote.discount)}`
+                    ? `âˆ’${formatVnd(quote.discount)}`
                     : formatVnd(0)
                   : t("checkout.applyToSee")}
               </span>

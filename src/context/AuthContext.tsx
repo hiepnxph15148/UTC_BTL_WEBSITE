@@ -89,8 +89,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const openLoginModal = useCallback((message?: string) => {
+    // Đọc storage (không chỉ state React) — tránh nháy khi đã login,
+    // và vẫn mở được sau logout() cùng tick (state chưa kịp cập nhật).
+    if (readAuthSession()?.accessToken) return;
     setLoginModalMessage(
-      message || "Đăng nhập để thêm sản phẩm vào giỏ và thanh toán.",
+      message || "Đăng nhập để thêm sản phẩm vào giỏ hàng và thanh toán.",
     );
     setLoginModalOpen(true);
   }, []);

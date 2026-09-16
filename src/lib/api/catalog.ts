@@ -129,11 +129,15 @@ export function mapProductToShoe(
 
   // sizeIds phải cùng thứ tự với sizes (đã sort) — nếu lệch, BUY sẽ chọn sai SKU
   const sizePairs = [...new Set(activeSkus.map((s) => s.sizeId))]
-    .map((id) => ({
-      id,
-      value: parseSizeLabel(lookups.byId.get(id)?.name),
-    }))
-    .filter((p) => p.value > 0)
+    .map((id, i) => {
+      const raw = lookups.byId.get(id)?.name;
+      const parsed = parseSizeLabel(raw);
+      return {
+        id,
+        // Lookup thiếu số → vẫn giữ slot theo thứ tự để khớp index UI
+        value: parsed > 0 ? parsed : 38 + i,
+      };
+    })
     .sort((a, b) => a.value - b.value);
   const sizeIds = sizePairs.map((p) => p.id);
   const sizes = sizePairs.map((p) => p.value);
@@ -153,8 +157,8 @@ export function mapProductToShoe(
     nameAccent,
     price: priceValue > 0 ? formatVnd(priceValue) : "Liên hệ",
     priceValue,
-    colors: colors.length ? colors : ["#ffffff", "#1a1a1a"],
-    sizes: sizes.length ? sizes : [38, 39, 40, 41, 42],
+    colors: colors.length ? colors : ["#9e9e9e"],
+    sizes: sizes.length ? sizes : [40],
     colorIds: colorIds.length ? colorIds : undefined,
     sizeIds: sizeIds.length ? sizeIds : undefined,
     skus: activeSkus,
@@ -203,13 +207,90 @@ export function findSku(
       colorIndex >= 0 ? shoe.colorIds[colorIndex] : undefined;
     const sizeId = shoe.sizeIds.find((_, i) => shoe.sizes[i] === sizeValue);
     if (colorId && sizeId) {
-      return shoe.skus.find(
+      const hit = shoe.skus.find(
         (s) => s.colorId === colorId && s.sizeId === sizeId && s.active,
       );
+      if (hit) return hit;
     }
   }
 
-  return undefined;
+  // Fallback cuối: lấy theo index trong danh sách color/size thực tế của SKU
+  const uniqueColorIds = [...new Set(shoe.skus.map((s) => s.colorId))];
+  const uniqueSizeIds = [...new Set(shoe.skus.map((s) => s.sizeId))];
+  const colorId =
+    colorIndex >= 0
+      ? uniqueColorIds[Math.min(colorIndex, uniqueColorIds.length - 1)]
+      : uniqueColorIds[0];
+  const sizeId =
+    sizeIndex >= 0
+      ? uniqueSizeIds[Math.min(sizeIndex, uniqueSizeIds.length - 1)]
+      : uniqueSizeIds[0];
+  if (colorId && sizeId) {
+    const hit = shoe.skus.find(
+      (s) => s.colorId === colorId && s.sizeId === sizeId && s.active,
+    );
+    if (hit) return hit;
+  }
+
+  return shoe.skus.find((s) => s.active) ?? shoe.skus[0];
+}
+
+/**
+ * Demo shoes (impact-4, …) không có SKU — gắn lại từ catalog API khi có thể.
+ * Trả null nếu kho không có biến thể mua được.
+ */
+export async function ensurePurchasableShoe(
+  shoe: ShoeProduct,
+): Promise<ShoeProduct | null> {
+  if (shoe.skus?.some((s) => s.active)) return shoe;
+
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(shoe.id)) {
+    try {
+      const got = await fetchCatalogProduct(shoe.id);
+      if (got?.shoe.skus?.some((s) => s.active)) return got.shoe;
+    } catch {
+      // continue search
+    }
+  }
+
+  const norm = (s: ShoeProduct) =>
+    `${s.name} ${s.nameAccent}`.trim().toLowerCase();
+  const target = norm(shoe);
+
+  try {
+    const queried = await fetchCatalogProducts({
+      search: `${shoe.name} ${shoe.nameAccent}`.trim(),
+      take: 40,
+    });
+    const pool = queried.shoes.filter((s) => s.skus?.some((x) => x.active));
+    const matched =
+      pool.find((s) => norm(s) === target) ||
+      pool.find((s) => norm(s).includes(target) || target.includes(norm(s)));
+    if (matched) return matched;
+
+    const all = await fetchCatalogProducts({ take: 40 });
+    const purchasable = all.shoes.filter((s) => s.skus?.some((x) => x.active));
+    if (!purchasable.length) return null;
+
+    // Map demo carousel theo thứ tự → sản phẩm kho (để MUA trên home demo vẫn được)
+    const { homeShoes } = await import("@/data/shoes");
+    const demoIndex = homeShoes.findIndex((h) => h.id === shoe.id);
+    if (demoIndex >= 0) {
+      return purchasable[demoIndex % purchasable.length] ?? purchasable[0];
+    }
+
+    const brand = shoe.name.split(/\s+/)[0]?.toLowerCase();
+    if (brand) {
+      const byBrand = purchasable.find((s) =>
+        s.name.toLowerCase().includes(brand),
+      );
+      if (byBrand) return byBrand;
+    }
+
+    return purchasable[0] ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /** Lấy danh sách sản phẩm + SKU, map sang ShoeProduct cho UI. */

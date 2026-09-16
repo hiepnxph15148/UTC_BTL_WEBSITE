@@ -12,6 +12,21 @@ type State = {
   fromApi: boolean;
 };
 
+function filterBySearch(list: ShoeProduct[], search?: string) {
+  const q = search?.trim().toLowerCase();
+  if (!q) return list;
+  return list.filter((shoe) =>
+    `${shoe.name} ${shoe.nameAccent} ${shoe.category}`
+      .toLowerCase()
+      .includes(q),
+  );
+}
+
+function preferPurchasable(list: ShoeProduct[]) {
+  const withSkus = list.filter((s) => (s.skus?.length ?? 0) > 0);
+  return withSkus.length ? withSkus : list;
+}
+
 /** Catalog hook: API lỗi/rỗng → fallback demo im lặng, không banner. */
 export function useCatalogProducts(options?: {
   categoryId?: string;
@@ -24,17 +39,23 @@ export function useCatalogProducts(options?: {
   const take = options?.take ?? 100;
   const fallback = options?.fallback ?? shoes;
 
-  const [state, setState] = useState<State>({
-    shoes: fallback,
+  const [state, setState] = useState<State>(() => ({
+    shoes: filterBySearch(fallback, search),
     lookups: null,
     loading: true,
     error: null,
     fromApi: false,
-  });
+  }));
 
   useEffect(() => {
     let cancelled = false;
-    setState((prev) => ({ ...prev, loading: true, error: null }));
+    setState((prev) => ({
+      ...prev,
+      // Giữ list API cũ khi refetch — tránh nháy về demo (không mua được)
+      shoes: prev.fromApi ? prev.shoes : filterBySearch(fallback, search),
+      loading: true,
+      error: null,
+    }));
 
     fetchCatalogProducts({
       categoryId,
@@ -43,23 +64,25 @@ export function useCatalogProducts(options?: {
     })
       .then(({ shoes: list, lookups }) => {
         if (cancelled) return;
+        const purchasable = preferPurchasable(list);
+        const next = purchasable.length ? purchasable : fallback;
         setState({
-          shoes: list.length ? list : fallback,
-          lookups: list.length ? lookups : null,
+          shoes: filterBySearch(next, search),
+          lookups: purchasable.length ? lookups : null,
           loading: false,
           error: null,
-          fromApi: list.length > 0,
+          fromApi: purchasable.length > 0,
         });
       })
       .catch(() => {
         if (cancelled) return;
-        setState({
-          shoes: fallback,
-          lookups: null,
+        setState((prev) => ({
+          shoes: prev.fromApi ? prev.shoes : filterBySearch(fallback, search),
+          lookups: prev.fromApi ? prev.lookups : null,
           loading: false,
           error: null,
-          fromApi: false,
-        });
+          fromApi: prev.fromApi,
+        }));
       });
 
     return () => {
