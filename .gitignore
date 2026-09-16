@@ -40,7 +40,7 @@ backend/api/openiddict.pfx
 !backend/api/openiddict.deploy.pfx
 backend/api/Logs/
 backend/api/App_Data/
-backend/backups/*.dump
+
 
 # vercel
 .vercel

@@ -33,6 +33,10 @@ export default function SiteHeader() {
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
+  const isAdminUser =
+    session?.userName?.toLowerCase() === "admin" ||
+    session?.userName?.toLowerCase() === "store-manager";
+
   const loadNotifications = useCallback(async () => {
     if (!isAuthenticated) {
       setNotifications([]);
@@ -77,7 +81,7 @@ export default function SiteHeader() {
     setNotifOpen(false);
   };
 
-  const authLinks = isAuthenticated
+  const desktopNav = isAuthenticated
     ? [...navLinks, { key: "nav.account" as const, href: "/account" }]
     : navLinks;
 
@@ -95,7 +99,7 @@ export default function SiteHeader() {
       </Link>
 
       <nav className="hidden items-center justify-end gap-5 pr-4 text-sm text-white/85 md:flex lg:gap-8 lg:pr-6 lg:text-[15px] xl:pr-10">
-        {authLinks.map((link) => (
+        {desktopNav.map((link) => (
           <Link
             key={link.href}
             href={link.href}
@@ -111,8 +115,6 @@ export default function SiteHeader() {
       </nav>
 
       <div className="flex items-center gap-3 justify-self-end sm:gap-4">
-        <LanguageSwitcher compact />
-
         <label className="hidden h-10 items-center gap-2 rounded-full bg-nike-surface px-4 md:flex lg:h-11 lg:px-5">
           <Image
             src={encodeURI("/icon/search (2).png")}
@@ -194,41 +196,13 @@ export default function SiteHeader() {
           </div>
         ) : null}
 
-        {authHydrated ? (
-          isAuthenticated ? (
-            <div className="hidden items-center gap-3 md:flex">
-              {session?.userName?.toLowerCase() === "admin" ||
-              session?.userName?.toLowerCase() === "store-manager" ? (
-                <Link
-                  href="/admin"
-                  className="text-xs font-semibold text-nike-accent hover:brightness-110"
-                >
-                  {t("nav.dashboard")}
-                </Link>
-              ) : null}
-              <Link
-                href="/account"
-                className="text-xs font-semibold text-white/70 hover:text-white"
-              >
-                {t("nav.account")}
-              </Link>
-              <button
-                type="button"
-                onClick={logout}
-                className="text-xs font-semibold text-white/70 hover:text-white"
-                title={session?.userName}
-              >
-                {t("nav.logout")}
-              </button>
-            </div>
-          ) : (
-            <Link
-              href="/login"
-              className="hidden text-xs font-semibold text-white/70 hover:text-white md:inline"
-            >
-              {t("nav.login")}
-            </Link>
-          )
+        {authHydrated && isAuthenticated && isAdminUser ? (
+          <Link
+            href="/admin"
+            className="hidden text-xs font-semibold text-nike-accent hover:brightness-110 md:inline"
+          >
+            {t("nav.dashboard")}
+          </Link>
         ) : null}
 
         <Link
@@ -271,26 +245,13 @@ export default function SiteHeader() {
           />
         </button>
 
-        <button
-          type="button"
-          aria-label={t("nav.menu")}
-          className="hidden cursor-pointer md:inline-flex"
-          onClick={() => setMenuOpen((open) => !open)}
-        >
-          <Image
-            src={encodeURI("/icon/menu (2).png")}
-            alt=""
-            width={26}
-            height={26}
-            className="h-6 w-6 mix-blend-lighten transition-transform hover:scale-110 lg:h-[26px] lg:w-[26px]"
-          />
-        </button>
+        <LanguageSwitcher compact />
       </div>
 
       {menuOpen ? (
         <div className="absolute inset-x-0 top-full border-b border-white/10 bg-[#181820]/95 px-4 py-4 backdrop-blur-md md:hidden">
           <nav className="flex flex-col gap-3">
-            {authLinks.map((link) => (
+            {desktopNav.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
@@ -311,7 +272,39 @@ export default function SiteHeader() {
             >
               {t("nav.cart")} {hydrated && count > 0 ? `(${count})` : ""}
             </Link>
-            <LanguageSwitcher />
+            {authHydrated ? (
+              isAuthenticated ? (
+                <>
+                  {isAdminUser ? (
+                    <Link
+                      href="/admin"
+                      className="text-base text-nike-accent"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      {t("nav.dashboard")}
+                    </Link>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      logout();
+                    }}
+                    className="text-left text-base text-white/75"
+                  >
+                    {t("nav.logout")}
+                  </button>
+                </>
+              ) : (
+                <Link
+                  href="/login"
+                  className="text-base text-white/75"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {t("nav.login")}
+                </Link>
+              )
+            ) : null}
           </nav>
         </div>
       ) : null}

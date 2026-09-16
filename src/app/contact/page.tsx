@@ -1,16 +1,67 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import PageShell from "@/components/PageShell";
+import { useAuth } from "@/context/AuthContext";
 import { useLocale } from "@/context/LocaleContext";
+import {
+  getMyProfile,
+  submitContact,
+  type ContactTopic,
+} from "@/lib/api";
 
 export default function ContactPage() {
-  const [sent, setSent] = useState(false);
+  const { isAuthenticated, hydrated, session } = useAuth();
   const { t } = useLocale();
+  const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [topic, setTopic] = useState<ContactTopic>("order");
+  const [message, setMessage] = useState("");
 
-  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    if (!hydrated || !isAuthenticated) return;
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const profile = await getMyProfile();
+        if (cancelled) return;
+        const fullName = [profile.name, profile.surname]
+          .filter(Boolean)
+          .join(" ")
+          .trim();
+        setName(fullName || profile.userName || session?.userName || "");
+        setEmail(profile.email || "");
+      } catch {
+        if (cancelled) return;
+        if (session?.userName) setName(session.userName);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated, isAuthenticated, session?.userName]);
+
+  const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setSent(true);
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    setSent(false);
+    try {
+      await submitContact({ name, email, topic, message });
+      setSent(true);
+      setMessage("");
+      setTopic("order");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("contact.sendFail"));
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -30,6 +81,8 @@ export default function ContactPage() {
               <input
                 required
                 name="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 className="h-11 rounded-xl border border-white/15 bg-black/40 px-3 text-white outline-none transition-colors focus:border-nike-accent"
                 placeholder="Nguyễn Văn A"
               />
@@ -40,6 +93,8 @@ export default function ContactPage() {
                 required
                 type="email"
                 name="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="h-11 rounded-xl border border-white/15 bg-black/40 px-3 text-white outline-none transition-colors focus:border-nike-accent"
                 placeholder="you@email.com"
               />
@@ -50,8 +105,9 @@ export default function ContactPage() {
             <span className="font-semibold text-white/85">{t("contact.topic")}</span>
             <select
               name="topic"
+              value={topic}
+              onChange={(e) => setTopic(e.target.value as ContactTopic)}
               className="h-11 rounded-xl border border-white/15 bg-black/40 px-3 text-white outline-none transition-colors focus:border-nike-accent"
-              defaultValue="order"
             >
               <option value="order">{t("contact.topicOrder")}</option>
               <option value="size">{t("contact.topicSize")}</option>
@@ -66,6 +122,8 @@ export default function ContactPage() {
               required
               name="message"
               rows={5}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
               className="rounded-xl border border-white/15 bg-black/40 px-3 py-3 text-white outline-none transition-colors focus:border-nike-accent"
               placeholder={t("contact.messagePh")}
             />
@@ -73,11 +131,15 @@ export default function ContactPage() {
 
           <button
             type="submit"
-            className="mt-5 inline-flex h-11 cursor-pointer items-center rounded-xl bg-gradient-to-r from-nike-accent to-[#ff6b95] px-5 text-sm font-bold tracking-wide text-white shadow-[0_12px_30px_rgba(237,59,107,0.35)] transition-transform hover:scale-105"
+            disabled={busy}
+            className="mt-5 inline-flex h-11 cursor-pointer items-center rounded-xl bg-gradient-to-r from-nike-accent to-[#ff6b95] px-5 text-sm font-bold tracking-wide text-white shadow-[0_12px_30px_rgba(237,59,107,0.35)] transition-transform hover:scale-105 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
           >
-            {t("contact.send")}
+            {busy ? t("common.processing") : t("contact.send")}
           </button>
 
+          {error ? (
+            <p className="mt-3 text-sm font-medium text-rose-400">{error}</p>
+          ) : null}
           {sent ? (
             <p className="mt-3 text-sm font-medium text-emerald-400">
               {t("contact.sent")}

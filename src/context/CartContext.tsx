@@ -14,8 +14,12 @@ import {
   cartCount,
   cartTotal,
   clearGuestCart,
+  readCartMeta,
   readGuestCart,
+  rememberCartMeta,
+  rememberCartMetaFromItems,
   writeGuestCart,
+  type CartDisplayMeta,
   type CartItem,
 } from "@/lib/cart";
 import { getShoePriceValue, type ShoeProduct } from "@/data/shoes";
@@ -47,27 +51,59 @@ type CartContextValue = {
 
 const CartContext = createContext<CartContextValue | null>(null);
 
-function makeCartId(shoeId: string, color: string, size: number) {
-  return `${shoeId}__${color}__${size}`;
+function displayMetaFromShoe(
+  shoe: ShoeProduct,
+  color: string,
+  size: number,
+): CartDisplayMeta {
+  return {
+    shoeId: shoe.id,
+    name: shoe.name,
+    nameAccent: shoe.nameAccent,
+    color,
+    size,
+    hero: shoe.hero,
+    accent: shoe.accent,
+  };
 }
 
 function mapApiLines(
   lines: Awaited<ReturnType<typeof storeApi.getCart>>,
+  meta: Record<string, CartDisplayMeta> = {},
+  previous: CartItem[] = [],
 ): CartItem[] {
-  return lines.map((line) => ({
-    id: line.skuId,
-    shoeId: line.skuId,
-    skuId: line.skuId,
-    name: line.code || "SKU",
-    nameAccent: "",
-    price: formatVnd(line.unitPrice),
-    priceValue: line.unitPrice,
-    color: "#9e9e9e",
-    size: 0,
-    hero: encodeURI("/item/image 1.png"),
-    accent: "#ed3b6b",
-    qty: line.quantity,
-  }));
+  const fromPrev: Record<string, CartDisplayMeta> = {};
+  for (const item of previous) {
+    const key = item.skuId || item.id;
+    if (!key) continue;
+    fromPrev[key] = {
+      shoeId: item.shoeId,
+      name: item.name,
+      nameAccent: item.nameAccent,
+      color: item.color,
+      size: item.size,
+      hero: item.hero,
+      accent: item.accent,
+    };
+  }
+
+  return lines.map((line) => {
+    const m = meta[line.skuId] || fromPrev[line.skuId];
+    return {
+      id: line.skuId,
+      shoeId: m?.shoeId || line.skuId,
+      skuId: line.skuId,
+      name: m?.name || line.code || "SKU",
+      nameAccent: m?.nameAccent || "",
+      price: formatVnd(line.unitPrice),
+      priceValue: line.unitPrice,
+      color: m?.color || "#9e9e9e",
+      size: m?.size || 0,
+      hero: m?.hero || encodeURI("/item/image 1.png"),
+      accent: m?.accent || "#ed3b6b",
+      qty: line.quantity,
+    };
+  });
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
@@ -89,7 +125,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       const lines = await storeApi.getCart();
-      setItems(mapApiLines(lines));
+      setItems((prev) => mapApiLines(lines, readCartMeta(), prev));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không tải được giỏ hàng");
     } finally {
@@ -100,6 +136,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   /** Đẩy giỏ guest (có skuId) lên giỏ account trên API, rồi xóa guest. */
   const mergeGuestIntoApiCart = useCallback(async (): Promise<boolean> => {
     const guest = readGuestCart();
+    rememberCartMetaFromItems(guest);
     const withSku = guest.filter((g) => g.skuId && g.qty > 0);
     if (!withSku.length) {
       clearGuestCart();
@@ -122,7 +159,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
       clearGuestCart();
       const lines = await storeApi.getCart();
-      setItems(mapApiLines(lines));
+      setItems(mapApiLines(lines, readCartMeta(), guest));
       return true;
     } catch (err) {
       setError(
@@ -132,7 +169,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       );
       try {
         const lines = await storeApi.getCart();
-        setItems(mapApiLines(lines));
+        setItems(mapApiLines(lines, readCartMeta(), guest));
       } catch {
         /* ignore */
       }
@@ -191,6 +228,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!hydrated || isAuthenticated) return;
     writeGuestCart(items);
+    rememberCartMetaFromItems(items);
   }, [items, hydrated, isAuthenticated]);
 
   const addItem = useCallback(
@@ -224,7 +262,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
           const existing = lines.find((l) => l.skuId === sku.id);
           const nextQty = (existing?.quantity ?? 0) + qty;
           await storeApi.setCartItem(sku.id, nextQty);
-          await refreshCart();
+          const meta = rememberCartMeta(
+            sku.id,
+            displayMetaFromShoe(shoe, color, size),
+          );
+          const refreshed = await storeApi.getCart();
+          setItems((prev) => mapApiLines(refreshed, meta, prev));
           return null;
         } catch (err) {
           const msg =
@@ -244,11 +287,24 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
       const id = sku.id;
       const priceValue = sku.price ?? getShoePriceValue(shoe);
+      rememberCartMeta(id, displayMetaFromShoe(shoe, color, size));
       setItems((prev) => {
         const existing = prev.find((item) => item.skuId === id || item.id === id);
         if (existing) {
           return prev.map((item) =>
-            item.id === existing.id ? { ...item, qty: item.qty + qty } : item,
+            item.id === existing.id
+              ? {
+                  ...item,
+                  qty: item.qty + qty,
+                  color,
+                  size,
+                  hero: shoe.hero,
+                  name: shoe.name,
+                  nameAccent: shoe.nameAccent,
+                  accent: shoe.accent,
+                  shoeId: shoe.id,
+                }
+              : item,
           );
         }
         return [
@@ -271,7 +327,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       });
       return null;
     },
-    [isAuthenticated, refreshCart],
+    [isAuthenticated],
   );
 
   const updateQty = useCallback(
