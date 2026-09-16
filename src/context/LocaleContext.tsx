@@ -34,13 +34,16 @@ type LocaleContextValue = {
 const LocaleContext = createContext<LocaleContextValue | null>(null);
 
 export function LocaleProvider({ children }: { children: ReactNode }) {
+  // Luôn bắt đầu bằng default để SSR khớp hydrate lần đầu.
   const [locale, setLocaleState] = useState<Locale>(defaultLocale);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     try {
       const stored = window.localStorage.getItem(localeStorageKey);
-      if (isLocale(stored)) setLocaleState(stored);
+      if (isLocale(stored) && stored !== defaultLocale) {
+        setLocaleState(stored);
+      }
     } catch {
       // ignore
     }
@@ -50,15 +53,15 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!ready) return;
     document.documentElement.lang = locale;
-    try {
-      window.localStorage.setItem(localeStorageKey, locale);
-    } catch {
-      // ignore
-    }
   }, [locale, ready]);
 
   const setLocale = useCallback((next: Locale) => {
     setLocaleState(next);
+    try {
+      window.localStorage.setItem(localeStorageKey, next);
+    } catch {
+      // ignore
+    }
   }, []);
 
   const t = useCallback<Translate>(

@@ -169,6 +169,7 @@ export default function ShoeArcCarousel({
         <button
           type="button"
           aria-label={t("carousel.drag")}
+          suppressHydrationWarning
           onPointerDown={(event) => {
             event.preventDefault();
             draggingRef.current = true;
@@ -192,6 +193,7 @@ export default function ShoeArcCarousel({
             <button
               key={shoe.id}
               type="button"
+              suppressHydrationWarning
               aria-label={t("carousel.select", {
                 name: `${shoe.name} ${shoe.nameAccent}`,
               })}
