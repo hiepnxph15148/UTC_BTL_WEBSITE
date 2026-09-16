@@ -226,7 +226,6 @@ Blueprint: `render.yaml` → New → Blueprint trên [dashboard.render.com](http
 - `.env.local`
 - `backend/api/appsettings.secrets.json`
 - `backend/api/openiddict.pfx`
-- `backend/backups/*.dump`
 - `node_modules/`, `.next/`
 
 Commit được: `.env.example`, `appsettings.secrets.json.example`, `docker-compose.yml`, source + docs.
