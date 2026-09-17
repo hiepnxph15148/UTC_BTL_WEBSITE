@@ -14,6 +14,10 @@ import { fakeOrders } from "@/lib/admin-store";
 import { readOrdersFromStorage, type StoredOrder } from "@/lib/orders";
 import { formatVnd, OrderState, storeApi, type OrderDto } from "@/lib/api";
 import {
+  displayOrderNumber,
+  formatAddressRecipient,
+} from "@/lib/format-display";
+import {
   orderStateLabel,
   paymentStateLabel,
   useAdmin,
@@ -87,11 +91,11 @@ function toRow(order: StoredOrder | (typeof fakeOrders)[number]): OrderRow {
 function apiToRow(order: OrderDto): OrderRow {
   return {
     id: order.id,
-    orderId: order.number || order.id.slice(0, 8),
+    orderId: displayOrderNumber(order.number, order.id),
     product: order.trackingCode || order.carrier || "Đơn COD",
     date: order.reservationExpiresAt?.slice(0, 10) || "",
     payment: paymentStateLabel(order.paymentState),
-    customer: order.addressSnapshot?.split("|")[0] || "Khách",
+    customer: formatAddressRecipient(order.addressSnapshot, "Khách"),
     status: orderStateLabel(order.state),
     amount: order.total,
     raw: order,

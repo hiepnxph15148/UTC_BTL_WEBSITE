@@ -136,10 +136,6 @@ export default function SiteHeader() {
     setNotifOpen(false);
   };
 
-  const mobileNav = isAuthenticated
-    ? [...navLinks, { key: "nav.account" as const, href: "/account" }]
-    : navLinks;
-
   return (
     <header className="relative z-50 flex shrink-0 items-center gap-3 px-4 py-4 sm:gap-4 sm:px-6 sm:py-5 md:px-8 md:py-6 lg:gap-8 lg:px-12 lg:py-7 xl:gap-10 xl:px-16">
       <Link
@@ -357,7 +353,7 @@ export default function SiteHeader() {
             />
           </form>
           <nav className="flex flex-col gap-3">
-            {mobileNav.map((link) => (
+            {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}

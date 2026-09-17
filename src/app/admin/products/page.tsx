@@ -15,7 +15,7 @@ const ProductsGrid = dynamic(
 );
 
 export default function AdminProductsPage() {
-  const { products, hydrated } = useAdmin();
+  const { products, hydrated, fromApi, error } = useAdmin();
 
   return (
     <div className="space-y-6">
@@ -23,8 +23,13 @@ export default function AdminProductsPage() {
         <div>
           <h1 className="text-3xl font-extrabold">All Products</h1>
           <p className="mt-1 text-sm text-white/55">
-            Danh sách sản phẩm seed + sản phẩm tạo mới (localStorage)
+            {fromApi
+              ? `Danh sách từ API · ${products.length} sản phẩm`
+              : "Dữ liệu demo local (seed + localStorage)"}
           </p>
+          {error ? (
+            <p className="mt-1 text-xs text-amber-300/90">{error}</p>
+          ) : null}
         </div>
         <Link
           href="/admin/products/new"

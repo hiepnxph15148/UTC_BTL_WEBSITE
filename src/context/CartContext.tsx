@@ -18,12 +18,22 @@ import {
   readGuestCart,
   rememberCartMeta,
   rememberCartMetaFromItems,
+  writeCartMeta,
   writeGuestCart,
   type CartDisplayMeta,
   type CartItem,
 } from "@/lib/cart";
 import { getShoePriceValue, type ShoeProduct } from "@/data/shoes";
-import { findSku, formatVnd, storeApi, ApiError, ensurePurchasableShoe, humanizeStoreError } from "@/lib/api";
+import {
+  ApiError,
+  ensurePurchasableShoe,
+  fetchCatalogProducts,
+  findSku,
+  formatVnd,
+  humanizeStoreError,
+  storeApi,
+} from "@/lib/api";
+import { displayProductName, looksLikeUuid } from "@/lib/format-display";
 import { useAuth } from "@/context/AuthContext";
 
 type AddPayload = {
@@ -89,12 +99,18 @@ function mapApiLines(
 
   return lines.map((line) => {
     const m = meta[line.skuId] || fromPrev[line.skuId];
+    const title = displayProductName(
+      m?.name,
+      m?.nameAccent ? `${m.name} ${m.nameAccent}` : null,
+    );
+    // Keep split name/accent when meta has them; otherwise use full title in name.
+    const hasSplit = Boolean(m?.name);
     return {
       id: line.skuId,
-      shoeId: m?.shoeId || line.skuId,
+      shoeId: m?.shoeId || "",
       skuId: line.skuId,
-      name: m?.name || line.code || "Sản phẩm",
-      nameAccent: m?.nameAccent || "",
+      name: hasSplit ? m!.name : title,
+      nameAccent: hasSplit ? m!.nameAccent : "",
       price: formatVnd(line.unitPrice),
       priceValue: line.unitPrice,
       color: m?.color || "#9e9e9e",
@@ -104,6 +120,45 @@ function mapApiLines(
       qty: line.quantity,
     };
   });
+}
+
+async function enrichMetaFromCatalog(
+  lines: Awaited<ReturnType<typeof storeApi.getCart>>,
+  meta: Record<string, CartDisplayMeta>,
+): Promise<Record<string, CartDisplayMeta>> {
+  const missing = lines.filter((line) => {
+    const m = meta[line.skuId];
+    return !m?.name || looksLikeUuid(m.name) || m.name.toLowerCase() === "sku";
+  });
+  if (!missing.length) return meta;
+
+  try {
+    const { shoes } = await fetchCatalogProducts({ take: 100 });
+    const next = { ...meta };
+    for (const shoe of shoes) {
+      for (const sku of shoe.skus || []) {
+        const colorIndex = shoe.colorIds?.indexOf(sku.colorId) ?? -1;
+        const sizeIndex = shoe.sizeIds?.indexOf(sku.sizeId) ?? -1;
+        next[sku.id] = {
+          shoeId: shoe.id,
+          name: shoe.name,
+          nameAccent: shoe.nameAccent,
+          color:
+            colorIndex >= 0
+              ? shoe.colors[colorIndex]
+              : shoe.colors[0] || "#9e9e9e",
+          size:
+            sizeIndex >= 0 ? shoe.sizes[sizeIndex] : shoe.sizes[0] || 0,
+          hero: shoe.hero,
+          accent: shoe.accent,
+        };
+      }
+    }
+    writeCartMeta(next);
+    return next;
+  } catch {
+    return meta;
+  }
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
@@ -125,7 +180,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       const lines = await storeApi.getCart();
-      setItems((prev) => mapApiLines(lines, readCartMeta(), prev));
+      const meta = await enrichMetaFromCatalog(lines, readCartMeta());
+      setItems((prev) => mapApiLines(lines, meta, prev));
     } catch (err) {
       setError(
         humanizeStoreError(
@@ -163,7 +219,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
       clearGuestCart();
       const lines = await storeApi.getCart();
-      setItems(mapApiLines(lines, readCartMeta(), guest));
+      const meta = await enrichMetaFromCatalog(lines, readCartMeta());
+      setItems(mapApiLines(lines, meta, guest));
       return true;
     } catch (err) {
       setError(
@@ -175,7 +232,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
       );
       try {
         const lines = await storeApi.getCart();
-        setItems(mapApiLines(lines, readCartMeta(), guest));
+        const meta = await enrichMetaFromCatalog(lines, readCartMeta());
+        setItems(mapApiLines(lines, meta, guest));
       } catch {
         /* ignore */
       }

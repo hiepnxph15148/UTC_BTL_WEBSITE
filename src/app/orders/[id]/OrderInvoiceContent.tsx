@@ -16,6 +16,12 @@ import {
   type OrderLineDto,
 } from "@/lib/api";
 import type { MessageKey } from "@/i18n/messages";
+import {
+  displayOrderNumber,
+  displayProductName,
+  formatAddressLines,
+  looksLikeUuid,
+} from "@/lib/format-display";
 import { REASON_MIN_LENGTH, isNonEmpty } from "@/lib/validation";
 
 function orderStateKey(state: number): MessageKey {
@@ -149,7 +155,7 @@ export default function OrderInvoiceContent() {
       });
       setReturnMsg(
         t("invoice.sentReturn", {
-          code: line.skuCode || line.id.slice(0, 8),
+          code: displayProductName(line.productName, line.skuCode),
         }),
       );
     } catch (err) {
@@ -215,10 +221,7 @@ export default function OrderInvoiceContent() {
   }
 
   const { order, items, history } = detail;
-  const addressLines = (order.addressSnapshot || "")
-    .split("|")
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const addressLines = formatAddressLines(order.addressSnapshot);
 
   return (
     <PageShell
@@ -228,7 +231,7 @@ export default function OrderInvoiceContent() {
         justPlaced
           ? t("invoice.successSub")
           : t("invoice.orderSub", {
-              number: order.number || order.id.slice(0, 8),
+              number: displayOrderNumber(order.number, order.id),
             })
       }
     >
@@ -283,7 +286,7 @@ export default function OrderInvoiceContent() {
               {t("invoice.heading")}
             </p>
             <h2 className="mt-2 text-3xl font-extrabold">
-              {order.number || order.id.slice(0, 8)}
+              {displayOrderNumber(order.number, order.id)}
             </h2>
             <p className="mt-1 text-sm text-white/55">
               {t(orderStateKey(order.state))} · {t(paymentKey(order.paymentState))}
@@ -359,9 +362,13 @@ export default function OrderInvoiceContent() {
                 {(items || []).map((line) => (
                   <tr key={line.id} className="border-t border-white/10">
                     <td className="py-3 pr-3 font-semibold">
-                      {line.productName || "—"}
+                      {displayProductName(line.productName)}
                     </td>
-                    <td className="py-3 pr-3 text-white/55">{line.skuCode}</td>
+                    <td className="py-3 pr-3 text-white/55">
+                      {line.skuCode && !looksLikeUuid(line.skuCode)
+                        ? line.skuCode
+                        : "—"}
+                    </td>
                     <td className="py-3 pr-3">{line.quantity}</td>
                     <td className="py-3 pr-3">{formatVnd(line.unitPrice)}</td>
                     <td className="py-3 font-semibold">
@@ -394,7 +401,11 @@ export default function OrderInvoiceContent() {
                     className="rounded-xl border border-white/10 bg-white/[0.03] p-4"
                   >
                     <p className="text-sm font-semibold">
-                      {line.productName} · {line.skuCode} (x{line.quantity})
+                      {displayProductName(line.productName)}
+                      {line.skuCode && !looksLikeUuid(line.skuCode)
+                        ? ` · ${line.skuCode}`
+                        : ""}{" "}
+                      (x{line.quantity})
                     </p>
                     <div className="mt-3 grid gap-2 sm:grid-cols-2">
                       <label className="block text-xs text-white/50">

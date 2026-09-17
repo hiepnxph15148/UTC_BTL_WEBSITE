@@ -11,6 +11,7 @@ import {
   storeApi,
   type OrderDto,
 } from "@/lib/api";
+import { displayOrderNumber, formatAddressRecipient } from "@/lib/format-display";
 import type { MessageKey } from "@/i18n/messages";
 
 function stateKey(state: number): MessageKey {
@@ -130,13 +131,13 @@ export default function MyOrdersPage() {
             >
               <div>
                 <p className="text-lg font-extrabold">
-                  {order.number || order.id.slice(0, 8)}
+                  {displayOrderNumber(order.number, order.id)}
                 </p>
                 <p className="mt-1 text-sm text-white/55">
                   {t(stateKey(order.state))} · COD · {formatVnd(order.total)}
                 </p>
                 <p className="mt-1 text-xs text-white/40">
-                  {order.addressSnapshot?.split("|")[0] || "—"}
+                  {formatAddressRecipient(order.addressSnapshot)}
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">

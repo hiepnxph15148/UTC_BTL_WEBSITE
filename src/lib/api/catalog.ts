@@ -87,7 +87,7 @@ function fallbackImage(index: number) {
   return encodeURI(`/item/image ${n}.png`);
 }
 
-function splitName(full: string) {
+export function splitName(full: string) {
   const parts = full.trim().split(/\s+/);
   if (parts.length <= 1) return { name: full, nameAccent: "" };
   return {
