@@ -15,7 +15,7 @@ import { categoryLabelKey } from "@/i18n/messages";
 export default function ProductDetailPage() {
   const params = useParams<{ id: string }>();
   const { addItem } = useCart();
-  const { isAuthenticated, openLoginModal } = useAuth();
+  const { isAuthenticated, hydrated: authHydrated, openLoginModal } = useAuth();
   const { t } = useLocale();
   const [shoe, setShoe] = useState<ShoeProduct | null>(
     () => getShoeById(params.id) ?? null,
@@ -77,6 +77,7 @@ export default function ProductDetailPage() {
   }
 
   const onBuy = async () => {
+    if (!authHydrated) return;
     if (!isAuthenticated) {
       openLoginModal(t("product.needLogin"));
       return;
@@ -92,7 +93,7 @@ export default function ProductDetailPage() {
         sizeIndex: size,
       });
       if (fail) {
-        if (fail === "__NEED_LOGIN__" || /đăng nhập|SKU|login/i.test(fail)) {
+        if (fail === "__NEED_LOGIN__") {
           openLoginModal(t("product.needLogin"));
         } else {
           window.alert(fail);

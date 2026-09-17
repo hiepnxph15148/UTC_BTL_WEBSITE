@@ -10,16 +10,23 @@ import type { ShoeProduct } from "@/data/shoes";
 type Props = {
   shoes: ShoeProduct[];
   activeIndex: number;
+  /** Catalog đang tải — khóa MUA để tránh mua bản demo chưa có SKU */
+  catalogLoading?: boolean;
 };
 
-export default function ProductPanel({ shoes, activeIndex }: Props) {
+export default function ProductPanel({
+  shoes,
+  activeIndex,
+  catalogLoading = false,
+}: Props) {
   const shoe = shoes[activeIndex];
   const { addItem } = useCart();
-  const { isAuthenticated, openLoginModal } = useAuth();
+  const { isAuthenticated, hydrated: authHydrated, openLoginModal } = useAuth();
   const { t } = useLocale();
   const [color, setColor] = useState(0);
   const [size, setSize] = useState(0);
   const [added, setAdded] = useState(false);
+  const [buying, setBuying] = useState(false);
 
   useEffect(() => {
     setColor(0);
@@ -28,28 +35,34 @@ export default function ProductPanel({ shoes, activeIndex }: Props) {
   }, [shoe.id]);
 
   const onBuy = async () => {
+    if (!authHydrated || catalogLoading || buying) return;
     if (!isAuthenticated) {
       openLoginModal(t("product.needLogin"));
       return;
     }
 
-    const fail = await addItem({
-      shoe,
-      color: shoe.colors[color],
-      size: shoe.sizes[size],
-      colorIndex: color,
-      sizeIndex: size,
-    });
-    if (fail) {
-      if (fail === "__NEED_LOGIN__" || /đăng nhập|SKU|login/i.test(fail)) {
-        openLoginModal(t("product.needLogin"));
-      } else {
-        window.alert(fail);
+    setBuying(true);
+    try {
+      const fail = await addItem({
+        shoe,
+        color: shoe.colors[color],
+        size: shoe.sizes[size],
+        colorIndex: color,
+        sizeIndex: size,
+      });
+      if (fail) {
+        if (fail === "__NEED_LOGIN__") {
+          openLoginModal(t("product.needLogin"));
+        } else {
+          window.alert(fail);
+        }
+        return;
       }
-      return;
+      setAdded(true);
+      window.setTimeout(() => setAdded(false), 1600);
+    } finally {
+      setBuying(false);
     }
-    setAdded(true);
-    window.setTimeout(() => setAdded(false), 1600);
   };
 
   return (
@@ -115,14 +128,19 @@ export default function ProductPanel({ shoes, activeIndex }: Props) {
       <button
         type="button"
         onClick={onBuy}
-        className="mt-1 w-full max-w-[168px] cursor-pointer rounded-[10px] py-3 text-sm font-bold tracking-[0.2em] text-white shadow-[0_10px_30px_rgba(237,59,107,0.35)] transition-transform hover:scale-105 active:scale-100 sm:py-3.5"
+        disabled={catalogLoading || buying || !authHydrated}
+        className="mt-1 w-full max-w-[168px] min-w-[168px] cursor-pointer rounded-[10px] py-3 text-sm font-bold tracking-[0.2em] text-white shadow-[0_10px_30px_rgba(237,59,107,0.35)] transition-transform hover:scale-105 active:scale-100 disabled:cursor-wait disabled:opacity-60 disabled:hover:scale-100 sm:py-3.5"
         style={{
           background: added
             ? "linear-gradient(90deg, #16a34a, #4ade80)"
             : `linear-gradient(90deg, ${shoe.accent}, #ff6b95)`,
         }}
       >
-        {added ? t("product.added") : t("product.buy")}
+        {added
+          ? t("product.added")
+          : buying || catalogLoading
+            ? t("product.adding")
+            : t("product.buy")}
       </button>
     </div>
   );

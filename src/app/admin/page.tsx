@@ -119,31 +119,33 @@ export default function AdminDashboardPage() {
         ))}
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[1.4fr_0.8fr]">
-        <RevenueChart />
+      <div className="grid min-w-0 gap-4 xl:grid-cols-[1.4fr_0.8fr]">
+        <div className="min-w-0">
+          <RevenueChart />
+        </div>
 
-        <div className="admin-card flex flex-col p-5">
-          <h2 className="mb-4 text-lg font-bold">Best Sellers</h2>
-          <div className="flex-1 space-y-3">
+        <div className="admin-card flex min-w-0 flex-col overflow-hidden p-5">
+          <h2 className="mb-4 shrink-0 text-lg font-bold">Best Sellers</h2>
+          <div className="min-w-0 flex-[1_1_0%] space-y-3">
             {(hydrated ? bestSellers : []).map((item) => (
               <div
                 key={item.id}
-                className="flex items-center gap-3 rounded-xl border border-white/8 bg-black/20 p-3"
+                className="flex min-w-0 items-center gap-3 overflow-hidden rounded-xl border border-white/8 bg-black/20 p-3"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={item.hero}
                   alt=""
-                  className="h-12 w-14 rounded-lg bg-[#0a0a12] object-contain"
+                  className="h-12 w-14 shrink-0 rounded-lg bg-[#0a0a12] object-contain"
                 />
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-[1_1_0%] overflow-hidden">
                   <p className="truncate font-semibold">
                     {item.name}{" "}
                     <span style={{ color: item.accent }}>{item.nameAccent}</span>
                   </p>
-                  <p className="text-sm text-white/55">{item.price}</p>
+                  <p className="truncate text-sm text-white/55">{item.price}</p>
                 </div>
-                <p className="text-xs font-semibold text-white/45">
+                <p className="shrink-0 whitespace-nowrap text-xs font-semibold text-white/45">
                   {item.sales} sales
                 </p>
               </div>

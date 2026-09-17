@@ -8,7 +8,7 @@ import PageShell from "@/components/PageShell";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { useLocale } from "@/context/LocaleContext";
-import { formatVnd, storeApi, type QuoteDto } from "@/lib/api";
+import { formatVnd, storeApi, type QuoteDto, humanizeStoreError } from "@/lib/api";
 import { displayProductName } from "@/lib/format-display";
 import {
   ADDRESS_MIN_LENGTH,
@@ -49,7 +49,7 @@ export default function CheckoutPage() {
         setPhone(preferred.phone || "");
         setAddress(preferred.fullAddress || "");
       } catch {
-        // ignore — user có thể nhập mới
+        // ignore â€” user cÃ³ thá»ƒ nháº­p má»›i
       }
     })();
   }, [isAuthenticated]);
@@ -91,7 +91,11 @@ export default function CheckoutPage() {
       setQuote(next);
     } catch (err) {
       setQuote(null);
-      setError(err instanceof Error ? err.message : t("checkout.couponFail"));
+      setError(
+        humanizeStoreError(
+          err instanceof Error ? err.message : t("checkout.couponFail"),
+        ),
+      );
     } finally {
       setQuoting(false);
     }
@@ -127,7 +131,11 @@ export default function CheckoutPage() {
       await clearCart();
       router.push(`/orders/${order.order.id}?invoice=1`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("checkout.orderFail"));
+      setError(
+        humanizeStoreError(
+          err instanceof Error ? err.message : t("checkout.orderFail"),
+        ),
+      );
     } finally {
       setPaying(false);
     }

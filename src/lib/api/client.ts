@@ -60,6 +60,54 @@ function mediaUrl(path: string | null | undefined) {
 
 export { mediaUrl };
 
+/** Đổi thông báo kỹ thuật từ API thành câu khách hàng hiểu được. */
+export function humanizeStoreError(raw: string | null | undefined): string {
+  const msg = (raw || "").trim();
+  if (!msg) return "Có lỗi xảy ra. Vui lòng thử lại.";
+
+  const lower = msg.toLowerCase();
+
+  if (
+    /sku.*không đủ tồn|không đủ tồn.*sku|insufficient.?stock|not enough stock|out of stock/i.test(
+      msg,
+    ) ||
+    (lower.includes("tồn kho") && lower.includes("sku"))
+  ) {
+    return "Màu/size bạn chọn hiện không còn đủ hàng. Hãy chọn size khác hoặc giảm số lượng.";
+  }
+
+  if (/không đủ tồn|tồn kho/i.test(msg) && !/đăng nhập|csrf/i.test(msg)) {
+    const left = msg.match(/còn\s+(\d+)/i)?.[1];
+    return left
+      ? `Chỉ còn ${left} đôi cho màu/size này. Hãy giảm số lượng hoặc chọn size khác.`
+      : "Màu/size bạn chọn hiện không còn đủ hàng. Hãy chọn size khác hoặc giảm số lượng.";
+  }
+
+  if (/voucher|coupon|mã giảm|discount/i.test(msg)) {
+    if (/hết|expired|invalid|không hợp lệ|hết lượt/i.test(msg)) {
+      return "Mã giảm giá không hợp lệ hoặc đã hết lượt sử dụng.";
+    }
+  }
+
+  if (/csrf|antiforgery/i.test(msg)) {
+    return "Phiên làm việc hết hạn. Vui lòng đăng nhập lại rồi thử lại.";
+  }
+
+  if (/401|unauthorized|đăng nhập|chưa đăng nhập|phiên đăng nhập/i.test(msg)) {
+    return "Bạn cần đăng nhập để tiếp tục.";
+  }
+
+  // Bỏ jargon SKU còn sót lại trong câu
+  if (/\bsku\b/i.test(msg)) {
+    return msg
+      .replace(/\bSKU\b/gi, "mẫu sản phẩm")
+      .replace(/\buuid\b/gi, "mã")
+      .trim();
+  }
+
+  return msg;
+}
+
 async function parseError(res: Response): Promise<ApiError> {
   let body: AbpErrorBody | null = null;
   let message = res.statusText || `HTTP ${res.status}`;
@@ -73,7 +121,7 @@ async function parseError(res: Response): Promise<ApiError> {
   } catch {
     // ignore non-JSON
   }
-  return new ApiError(res.status, message, body);
+  return new ApiError(res.status, humanizeStoreError(message), body);
 }
 
 export type ApiFetchOptions = RequestInit & {

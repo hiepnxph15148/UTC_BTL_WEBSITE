@@ -46,15 +46,16 @@ export default function LoginModal() {
   }, [loginModalOpen, isAuthenticated, closeLoginModal]);
 
   useEffect(() => {
-    if (!loginModalOpen) return;
+    if (!loginModalOpen || isAuthenticated) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") closeLoginModal();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [loginModalOpen, closeLoginModal]);
+  }, [loginModalOpen, isAuthenticated, closeLoginModal]);
 
-  if (!loginModalOpen) return null;
+  // Không render modal nếu đã có session (tránh nháy 1 frame).
+  if (!loginModalOpen || isAuthenticated) return null;
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();

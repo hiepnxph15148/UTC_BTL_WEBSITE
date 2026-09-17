@@ -24,7 +24,15 @@ import {
   type CartItem,
 } from "@/lib/cart";
 import { getShoePriceValue, type ShoeProduct } from "@/data/shoes";
-import { fetchCatalogProducts, findSku, formatVnd, storeApi } from "@/lib/api";
+import {
+  ApiError,
+  ensurePurchasableShoe,
+  fetchCatalogProducts,
+  findSku,
+  formatVnd,
+  humanizeStoreError,
+  storeApi,
+} from "@/lib/api";
 import { displayProductName, looksLikeUuid } from "@/lib/format-display";
 import { useAuth } from "@/context/AuthContext";
 
@@ -154,7 +162,7 @@ async function enrichMetaFromCatalog(
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const { isAuthenticated, hydrated: authHydrated, session } = useAuth();
+  const { isAuthenticated, hydrated: authHydrated, session, logout } = useAuth();
   const userKey = session?.userName?.toLowerCase() || null;
 
   const [items, setItems] = useState<CartItem[]>([]);
@@ -175,7 +183,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const meta = await enrichMetaFromCatalog(lines, readCartMeta());
       setItems((prev) => mapApiLines(lines, meta, prev));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Không tải được giỏ hàng");
+      setError(
+        humanizeStoreError(
+          err instanceof Error ? err.message : "Không tải được giỏ hàng",
+        ),
+      );
     } finally {
       setSyncing(false);
     }
@@ -212,9 +224,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return true;
     } catch (err) {
       setError(
-        err instanceof Error
-          ? err.message
-          : "Không gộp được giỏ guest vào tài khoản",
+        humanizeStoreError(
+          err instanceof Error
+            ? err.message
+            : "Không gộp được giỏ vào tài khoản",
+        ),
       );
       try {
         const lines = await storeApi.getCart();
@@ -291,18 +305,48 @@ export function CartProvider({ children }: { children: ReactNode }) {
       sizeIndex,
     }: AddPayload): Promise<string | null> => {
       setError(null);
-      const sku = findSku(shoe, color, size, { colorIndex, sizeIndex });
+      let working = shoe;
+      let sku = findSku(working, color, size, { colorIndex, sizeIndex });
+
+      if (!sku) {
+        const resolved = await ensurePurchasableShoe(working);
+        if (resolved) {
+          working = resolved;
+          sku = findSku(working, color, size, { colorIndex, sizeIndex });
+          // Demo size 6–9 vs kho 38–44: lấy theo index hoặc SKU đầu
+          if (!sku && working.skus?.length) {
+            const colors = [...new Set(working.skus.map((s) => s.colorId))];
+            const sizes = [...new Set(working.skus.map((s) => s.sizeId))];
+            const c =
+              colors[
+                Math.min(colorIndex ?? 0, Math.max(colors.length - 1, 0))
+              ] ?? colors[0];
+            const s =
+              sizes[Math.min(sizeIndex ?? 0, Math.max(sizes.length - 1, 0))] ??
+              sizes[0];
+            sku =
+              working.skus.find(
+                (x) => x.colorId === c && x.sizeId === s && x.active,
+              ) ||
+              working.skus.find((x) => x.active) ||
+              working.skus[0];
+          }
+        }
+      }
 
       if (isAuthenticated) {
         if (!sku) {
-          const msg = shoe.skus?.length
-            ? "Không tìm thấy SKU cho màu/size đã chọn. Hãy chọn lại."
-            : "__NEED_LOGIN__";
-          if (msg !== "__NEED_LOGIN__") setError(msg);
+          const msg =
+            "Sản phẩm này chưa có trong kho để đặt hàng. Hãy chọn mẫu ở Bộ sưu tập.";
+          setError(msg);
           return msg;
         }
         if (sku.available < qty) {
-          const msg = `Không đủ tồn kho (còn ${sku.available}).`;
+          const left = sku.available;
+          const msg =
+            left <= 0
+              ? "Màu/size bạn chọn đã hết hàng. Hãy chọn size hoặc màu khác."
+              : `Chỉ còn ${left} đôi cho màu/size này. Hãy giảm số lượng hoặc chọn size khác.`;
           setError(msg);
           return msg;
         }
@@ -312,16 +356,33 @@ export function CartProvider({ children }: { children: ReactNode }) {
           const existing = lines.find((l) => l.skuId === sku.id);
           const nextQty = (existing?.quantity ?? 0) + qty;
           await storeApi.setCartItem(sku.id, nextQty);
+          const displayColor =
+            working.colors[
+              Math.min(colorIndex ?? 0, Math.max(working.colors.length - 1, 0))
+            ] ?? color;
+          const displaySize =
+            working.sizes[
+              Math.min(sizeIndex ?? 0, Math.max(working.sizes.length - 1, 0))
+            ] ?? size;
           const meta = rememberCartMeta(
             sku.id,
-            displayMetaFromShoe(shoe, color, size),
+            displayMetaFromShoe(working, displayColor, displaySize),
           );
           const refreshed = await storeApi.getCart();
           setItems((prev) => mapApiLines(refreshed, meta, prev));
           return null;
         } catch (err) {
-          const msg =
-            err instanceof Error ? err.message : "Thêm giỏ thất bại";
+          const raw =
+            err instanceof Error ? err.message : "Không thêm được vào giỏ hàng.";
+          const msg = humanizeStoreError(raw);
+          const authFail =
+            (err instanceof ApiError && err.status === 401) ||
+            /đăng nhập|unauthorized|login/i.test(raw);
+          if (authFail) {
+            logout();
+            setError(null);
+            return "__NEED_LOGIN__";
+          }
           setError(msg);
           return msg;
         } finally {
@@ -336,8 +397,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
 
       const id = sku.id;
-      const priceValue = sku.price ?? getShoePriceValue(shoe);
-      rememberCartMeta(id, displayMetaFromShoe(shoe, color, size));
+      const priceValue = sku.price ?? getShoePriceValue(working);
+      const displayColor =
+        working.colors[
+          Math.min(colorIndex ?? 0, Math.max(working.colors.length - 1, 0))
+        ] ?? color;
+      const displaySize =
+        working.sizes[
+          Math.min(sizeIndex ?? 0, Math.max(working.sizes.length - 1, 0))
+        ] ?? size;
+      rememberCartMeta(id, displayMetaFromShoe(working, displayColor, displaySize));
       setItems((prev) => {
         const existing = prev.find((item) => item.skuId === id || item.id === id);
         if (existing) {
@@ -346,13 +415,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
               ? {
                   ...item,
                   qty: item.qty + qty,
-                  color,
-                  size,
-                  hero: shoe.hero,
-                  name: shoe.name,
-                  nameAccent: shoe.nameAccent,
-                  accent: shoe.accent,
-                  shoeId: shoe.id,
+                  color: displayColor,
+                  size: displaySize,
+                  hero: working.hero,
+                  name: working.name,
+                  nameAccent: working.nameAccent,
+                  accent: working.accent,
+                  shoeId: working.id,
                 }
               : item,
           );
@@ -361,23 +430,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
           ...prev,
           {
             id,
-            shoeId: shoe.id,
+            shoeId: working.id,
             skuId: sku.id,
-            name: shoe.name,
-            nameAccent: shoe.nameAccent,
-            price: shoe.price,
+            name: working.name,
+            nameAccent: working.nameAccent,
+            price: working.price,
             priceValue,
-            color,
-            size,
-            hero: shoe.hero,
-            accent: shoe.accent,
+            color: displayColor,
+            size: displaySize,
+            hero: working.hero,
+            accent: working.accent,
             qty,
           },
         ];
       });
       return null;
     },
-    [isAuthenticated],
+    [isAuthenticated, logout],
   );
 
   const updateQty = useCallback(
@@ -390,7 +459,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
           else await storeApi.setCartItem(id, qty);
           await refreshCart();
         } catch (err) {
-          setError(err instanceof Error ? err.message : "Cập nhật giỏ thất bại");
+          setError(
+            humanizeStoreError(
+              err instanceof Error ? err.message : "Không cập nhật được giỏ hàng",
+            ),
+          );
         } finally {
           setSyncing(false);
         }
@@ -415,7 +488,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
           await storeApi.removeCartItem(id);
           await refreshCart();
         } catch (err) {
-          setError(err instanceof Error ? err.message : "Xóa giỏ thất bại");
+          setError(
+            humanizeStoreError(
+              err instanceof Error ? err.message : "Không xóa được sản phẩm",
+            ),
+          );
         } finally {
           setSyncing(false);
         }
@@ -437,7 +514,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
         }
         setItems([]);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Xóa giỏ thất bại");
+        setError(
+          humanizeStoreError(
+            err instanceof Error ? err.message : "Không xóa được giỏ hàng",
+          ),
+        );
       } finally {
         setSyncing(false);
       }

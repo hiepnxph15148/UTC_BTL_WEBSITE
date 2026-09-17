@@ -12,6 +12,10 @@ import {
   type SkuDto,
 } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import {
+  PRODUCT_IMAGE_ACCEPT,
+  validateProductImageFile,
+} from "@/lib/product-image";
 
 export default function AdminProductDetailPage() {
   const params = useParams<{ id: string }>();
@@ -117,6 +121,11 @@ export default function AdminProductDetailPage() {
 
   const uploadImage = async (file: File | null) => {
     if (!product || !file || busy) return;
+    const issue = validateProductImageFile(file);
+    if (issue) {
+      setError(issue);
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -349,10 +358,13 @@ export default function AdminProductDetailPage() {
             Upload file
             <input
               type="file"
-              accept="image/jpeg,image/png,image/webp"
+              accept={PRODUCT_IMAGE_ACCEPT}
               onChange={(e) => void uploadImage(e.target.files?.[0] || null)}
               className="mt-1 block w-full text-sm text-white/70"
             />
+            <span className="mt-1 block text-[11px] text-white/40">
+              JPEG / PNG / WebP · tối đa 5 MB
+            </span>
           </label>
           <label className="block text-xs text-white/50">
             Hoặc URL

@@ -29,6 +29,18 @@ import {
 import { LookupKind } from "@/lib/api/types";
 import { useAuth } from "@/context/AuthContext";
 
+export type AddProductInput = Omit<
+  AdminProduct,
+  "id" | "createdAt" | "source" | "sales"
+> & {
+  sales?: number;
+  /** UUID danh mục API khi fromApi; không thì slug seed */
+  categoryId?: string;
+  description?: string | null;
+  /** File ảnh JPEG/PNG/WebP — upload sau khi createProduct */
+  imageFile?: File | null;
+};
+
 type AdminContextValue = {
   hydrated: boolean;
   fromApi: boolean;
@@ -37,11 +49,7 @@ type AdminContextValue = {
   categories: AdminCategory[];
   orders: OrderDto[];
   report: ReportDto | null;
-  addProduct: (
-    input: Omit<AdminProduct, "id" | "createdAt" | "source" | "sales"> & {
-      sales?: number;
-    },
-  ) => Promise<void>;
+  addProduct: (input: AddProductInput) => Promise<void>;
   addCategory: (input: Omit<AdminCategory, "id"> & { id?: string }) => void;
   removeProduct: (id: string) => void;
   refresh: () => Promise<void>;
@@ -84,6 +92,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [customProducts, setCustomProducts] = useState<AdminProduct[]>([]);
   const [customCategories, setCustomCategories] = useState<AdminCategory[]>([]);
   const [apiProducts, setApiProducts] = useState<AdminProduct[]>([]);
+  const [apiCategories, setApiCategories] = useState<AdminCategory[]>([]);
   const [orders, setOrders] = useState<OrderDto[]>([]);
   const [report, setReport] = useState<ReportDto | null>(null);
 
@@ -91,6 +100,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     if (!isAuthenticated) {
       setFromApi(false);
       setApiProducts([]);
+      setApiCategories([]);
       setOrders([]);
       setReport(null);
       return;
@@ -110,8 +120,20 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
           storeApi.getLookups(LookupKind.Category),
         ]);
 
+      const accents = ["#ed3b6b", "#3b82f6", "#c6e600", "#8b5cff"];
       const categoryNameById = new Map(
         categoriesLookup.map((c) => [c.id, c.name || ""]),
+      );
+
+      setApiCategories(
+        categoriesLookup
+          .filter((c) => c.active !== false)
+          .map((c, index) => ({
+            id: c.id,
+            label: c.name || "Category",
+            blurb: "",
+            accent: accents[index % accents.length],
+          })),
       );
 
       setApiProducts(
@@ -123,7 +145,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
             nameAccent,
             price: "—",
             category: categoryNameById.get(p.categoryId) || "—",
-            accent: ["#ed3b6b", "#3b82f6", "#c6e600", "#8b5cff"][index % 4],
+            accent: accents[index % accents.length],
             hero:
               mediaUrl(p.imageUrl) ||
               encodeURI(`/item/image ${(index % 15) + 1}.png`),
@@ -141,6 +163,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       setFromApi(true);
     } catch (err) {
       setFromApi(false);
+      setApiCategories([]);
       setError(
         err instanceof Error
           ? `${err.message} — admin đang dùng dữ liệu local`
@@ -161,58 +184,74 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   }, [authHydrated, refresh]);
 
   const products = useMemo(() => {
-    if (fromApi && apiProducts.length) return apiProducts;
+    // Khi đã nối API: chỉ hiện danh sách API (cùng nguồn với Create Product).
+    if (fromApi) return apiProducts;
     const seed = seedProducts();
     const seedIds = new Set(seed.map((p) => p.id));
     return [...seed, ...customProducts.filter((p) => !seedIds.has(p.id))];
   }, [customProducts, apiProducts, fromApi]);
 
   const categories = useMemo(() => {
+    if (fromApi && apiCategories.length) return apiCategories;
     const seed = seedCategories();
     const seedIds = new Set(seed.map((c) => c.id));
     return [...seed, ...customCategories.filter((c) => !seedIds.has(c.id))];
-  }, [customCategories]);
+  }, [apiCategories, customCategories, fromApi]);
 
   const addProduct = useCallback(
-    async (
-      input: Omit<AdminProduct, "id" | "createdAt" | "source" | "sales"> & {
-        sales?: number;
-      },
-    ) => {
+    async (input: AddProductInput) => {
       if (isAuthenticated) {
-        // Cần brandId/categoryId UUID thật từ lookups — lưu local nếu chưa đủ.
-        try {
-          const lookups = await storeApi.getLookups();
-          const category =
-            lookups.find(
-              (l) =>
-                l.kind === LookupKind.Category &&
-                (l.id === input.category ||
-                  (l.name || "")
-                    .toLowerCase()
-                    .includes(input.category.toLowerCase())),
-            ) || lookups.find((l) => l.kind === LookupKind.Category);
-          const brand = lookups.find((l) => l.kind === LookupKind.Brand);
-          if (category && brand) {
-            const created = await storeApi.createProduct({
-              name: `${input.name} ${input.nameAccent}`.trim(),
-              slug: slugify(`${input.name}-${input.nameAccent}-${Date.now()}`),
-              description: null,
-              imageUrl: input.hero.startsWith("http") ? input.hero : null,
-              categoryId: category.id,
-              brandId: brand.id,
-              published: true,
-            });
-            await refresh();
-            if (created) return;
-          }
-        } catch {
-          // fall through to local
+        const lookups = await storeApi.getLookups();
+        const categoryId = input.categoryId || input.category;
+        const category =
+          lookups.find(
+            (l) =>
+              l.kind === LookupKind.Category &&
+              (l.id === categoryId ||
+                (l.name || "").toLowerCase() ===
+                  (input.category || "").toLowerCase() ||
+                (l.name || "")
+                  .toLowerCase()
+                  .includes((input.category || "").toLowerCase())),
+          ) || lookups.find((l) => l.kind === LookupKind.Category);
+        const brand = lookups.find((l) => l.kind === LookupKind.Brand);
+        if (!category || !brand) {
+          throw new Error(
+            "Thiếu danh mục hoặc thương hiệu trên API. Hãy tạo lookup trước.",
+          );
         }
+
+        const created = await storeApi.createProduct({
+          name: `${input.name} ${input.nameAccent}`.trim(),
+          slug: slugify(`${input.name}-${input.nameAccent}-${Date.now()}`),
+          description: input.description?.trim() || null,
+          imageUrl:
+            !input.imageFile && input.hero.startsWith("http")
+              ? input.hero
+              : null,
+          categoryId: category.id,
+          brandId: brand.id,
+          published: true,
+        });
+
+        if (input.imageFile) {
+          await storeApi.uploadProductImage(created.id, input.imageFile);
+        }
+
+        await refresh();
+        return;
       }
 
       const product: AdminProduct = {
-        ...input,
+        name: input.name,
+        nameAccent: input.nameAccent,
+        price: input.price,
+        category: input.category,
+        accent: input.accent,
+        hero: input.hero,
+        colors: input.colors,
+        sizes: input.sizes,
+        stock: input.stock,
         id: `${slugify(`${input.name}-${input.nameAccent}`)}-${Date.now().toString(36)}`,
         createdAt: new Date().toISOString().slice(0, 10),
         source: "custom",
