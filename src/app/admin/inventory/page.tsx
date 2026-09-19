@@ -4,10 +4,12 @@ import { useCallback, useEffect, useState } from "react";
 import { storeApi, type InventoryDto, type MovementDto } from "@/lib/api";
 import { useAdmin } from "@/context/AdminContext";
 import { useAuth } from "@/context/AuthContext";
+import { useLocale } from "@/context/LocaleContext";
 
 export default function AdminInventoryPage() {
   const { fromApi, error: adminError } = useAdmin();
   const { isAuthenticated } = useAuth();
+  const { t, dateLocale } = useLocale();
   const [items, setItems] = useState<InventoryDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -82,10 +84,10 @@ export default function AdminInventoryPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight">Inventory</h1>
-        <p className="mt-1 text-sm text-white/55">
-          Tồn kho SKU · nhập / điều chỉnh · sổ giao dịch
-        </p>
+        <h1 className="text-3xl font-extrabold tracking-tight">
+          {t("admin.invTitle")}
+        </h1>
+        <p className="mt-1 text-sm text-white/55">{t("admin.invSubtitle")}</p>
         {adminError || error ? (
           <p className="mt-1 text-xs text-amber-200/80">{error || adminError}</p>
         ) : null}
@@ -93,7 +95,7 @@ export default function AdminInventoryPage() {
 
       {!fromApi && !isAuthenticated ? (
         <div className="admin-card p-6 text-sm text-white/60">
-          Đăng nhập tài khoản có quyền Inventory.Manage để xem tồn kho API.
+          {t("admin.invNeedPerm")}
         </div>
       ) : (
         <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
@@ -118,16 +120,24 @@ export default function AdminInventoryPage() {
             </div>
 
             {loading ? (
-              <p className="py-10 text-center text-sm text-white/45">Đang tải…</p>
+              <p className="py-10 text-center text-sm text-white/45">
+                {t("common.loading")}
+              </p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[520px] text-left text-sm">
                   <thead className="text-xs uppercase tracking-wide text-white/40">
                     <tr>
                       <th className="pb-3 pr-3 font-semibold">SKU</th>
-                      <th className="pb-3 pr-3 font-semibold">On hand</th>
-                      <th className="pb-3 pr-3 font-semibold">Reserved</th>
-                      <th className="pb-3 pr-3 font-semibold">Available</th>
+                      <th className="pb-3 pr-3 font-semibold">
+                        {t("admin.invOnHand")}
+                      </th>
+                      <th className="pb-3 pr-3 font-semibold">
+                        {t("admin.invReserved")}
+                      </th>
+                      <th className="pb-3 pr-3 font-semibold">
+                        {t("admin.invAvailable")}
+                      </th>
                       <th className="pb-3 font-semibold" />
                     </tr>
                   </thead>
@@ -205,11 +215,13 @@ export default function AdminInventoryPage() {
                   onClick={() => void adjust()}
                   className="rounded-xl bg-[#ed3b6b] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
                 >
-                  {busy ? "Đang lưu…" : "Adjust stock"}
+                  {busy ? t("admin.saving") : t("admin.invAdjust")}
                 </button>
 
                 <div>
-                  <h3 className="text-sm font-bold text-white/80">Stock movements</h3>
+                  <h3 className="text-sm font-bold text-white/80">
+                    {t("admin.invMovements")}
+                  </h3>
                   <ul className="mt-2 max-h-80 space-y-2 overflow-y-auto">
                     {movements.map((m) => (
                       <li
@@ -217,12 +229,16 @@ export default function AdminInventoryPage() {
                         className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs"
                       >
                         <div className="font-semibold text-white/85">
-                          {m.delta > 0 ? "+" : ""}
-                          {m.delta} → balance {m.balance}
+                          {t("admin.invDeltaLine", {
+                            delta: `${m.delta > 0 ? "+" : ""}${m.delta}`,
+                            balance: m.balance,
+                          })}
                         </div>
                         <div className="mt-0.5 text-white/45">
                           {m.reason || "—"} ·{" "}
-                          {m.at ? new Date(m.at).toLocaleString("vi-VN") : ""}
+                          {m.at
+                            ? new Date(m.at).toLocaleString(dateLocale)
+                            : ""}
                         </div>
                       </li>
                     ))}

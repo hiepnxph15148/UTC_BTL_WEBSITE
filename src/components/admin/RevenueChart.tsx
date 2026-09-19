@@ -4,12 +4,40 @@ import Highcharts from "highcharts";
 import HighchartsReact from "highcharts-react-official";
 import { useMemo, useState } from "react";
 import { revenueSeries } from "@/lib/admin-store";
+import { useLocale } from "@/context/LocaleContext";
+import type { MessageKey } from "@/i18n/messages";
 
 type Range = "weekly" | "monthly" | "yearly";
 
+const WEEKLY_KEYS: MessageKey[] = [
+  "admin.dayMon",
+  "admin.dayTue",
+  "admin.dayWed",
+  "admin.dayThu",
+  "admin.dayFri",
+  "admin.daySat",
+  "admin.daySun",
+];
+
+const MONTHLY_KEYS: MessageKey[] = [
+  "admin.monthJul",
+  "admin.monthAug",
+  "admin.monthSep",
+  "admin.monthOct",
+  "admin.monthNov",
+  "admin.monthDec",
+];
+
 export default function RevenueChart() {
+  const { t } = useLocale();
   const [range, setRange] = useState<Range>("monthly");
   const data = revenueSeries[range];
+
+  const categories = useMemo(() => {
+    if (range === "weekly") return WEEKLY_KEYS.map((k) => t(k));
+    if (range === "monthly") return MONTHLY_KEYS.map((k) => t(k));
+    return data.map((d) => d.name);
+  }, [range, data, t]);
 
   const options = useMemo<Highcharts.Options>(
     () => ({
@@ -23,7 +51,7 @@ export default function RevenueChart() {
       credits: { enabled: false },
       legend: { enabled: false },
       xAxis: {
-        categories: data.map((d) => d.name),
+        categories,
         lineColor: "rgba(255,255,255,0.12)",
         tickColor: "rgba(255,255,255,0.12)",
         labels: { style: { color: "rgba(255,255,255,0.55)" } },
@@ -61,24 +89,24 @@ export default function RevenueChart() {
       series: [
         {
           type: "areaspline",
-          name: "Revenue",
+          name: t("admin.chartRevenue"),
           data: data.map((d) => d.value),
         },
       ],
     }),
-    [data],
+    [categories, data, t],
   );
 
-  const ranges: { id: Range; label: string }[] = [
-    { id: "weekly", label: "WEEKLY" },
-    { id: "monthly", label: "MONTHLY" },
-    { id: "yearly", label: "YEARLY" },
+  const ranges: { id: Range; labelKey: MessageKey }[] = [
+    { id: "weekly", labelKey: "admin.chartWeekly" },
+    { id: "monthly", labelKey: "admin.chartMonthly" },
+    { id: "yearly", labelKey: "admin.chartYearly" },
   ];
 
   return (
     <div className="admin-card flex h-full min-w-0 flex-col overflow-hidden p-5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-bold">Sale Graph</h2>
+        <h2 className="text-lg font-bold">{t("admin.chartSaleGraph")}</h2>
         <div className="flex rounded-lg border border-white/10 bg-black/20 p-1">
           {ranges.map((item) => (
             <button
@@ -91,7 +119,7 @@ export default function RevenueChart() {
                   : "text-white/55 hover:text-white"
               }`}
             >
-              {item.label}
+              {t(item.labelKey)}
             </button>
           ))}
         </div>

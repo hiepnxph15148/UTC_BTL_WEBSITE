@@ -39,6 +39,11 @@ export type AddProductInput = Omit<
   description?: string | null;
   /** File ảnh JPEG/PNG/WebP — upload sau khi createProduct */
   imageFile?: File | null;
+  /** Lookup màu / size để tạo SKU sau khi tạo sản phẩm (API) */
+  colorIds?: string[];
+  sizeIds?: string[];
+  /** Giá SKU (VND) khi tạo qua API */
+  unitPrice?: number;
 };
 
 type AdminContextValue = {
@@ -206,19 +211,28 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         const category =
           lookups.find(
             (l) =>
-              l.kind === LookupKind.Category &&
+              Number(l.kind) === LookupKind.Category &&
               (l.id === categoryId ||
                 (l.name || "").toLowerCase() ===
                   (input.category || "").toLowerCase() ||
                 (l.name || "")
                   .toLowerCase()
                   .includes((input.category || "").toLowerCase())),
-          ) || lookups.find((l) => l.kind === LookupKind.Category);
-        const brand = lookups.find((l) => l.kind === LookupKind.Brand);
+          ) ||
+          lookups.find((l) => Number(l.kind) === LookupKind.Category);
+        const brand = lookups.find(
+          (l) => Number(l.kind) === LookupKind.Brand && l.active !== false,
+        );
         if (!category || !brand) {
           throw new Error(
             "Thiếu danh mục hoặc thương hiệu trên API. Hãy tạo lookup trước.",
           );
+        }
+
+        const colorIds = (input.colorIds || []).filter(Boolean);
+        const sizeIds = (input.sizeIds || []).filter(Boolean);
+        if (!colorIds.length || !sizeIds.length) {
+          throw new Error("Chọn ít nhất một màu và một size để tạo SKU.");
         }
 
         const created = await storeApi.createProduct({
@@ -236,6 +250,44 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
         if (input.imageFile) {
           await storeApi.uploadProductImage(created.id, input.imageFile);
+        }
+
+        const colorName = (id: string) =>
+          lookups.find((l) => l.id === id)?.name || id.slice(0, 4);
+        const sizeName = (id: string) =>
+          lookups.find((l) => l.id === id)?.name || id.slice(0, 4);
+        const unitPrice =
+          typeof input.unitPrice === "number" && input.unitPrice > 0
+            ? Math.round(input.unitPrice)
+            : 0;
+        const stockEach = Math.max(0, Math.trunc(input.stock || 0));
+
+        for (const colorId of colorIds) {
+          for (const sizeId of sizeIds) {
+            const code = slugify(
+              `${input.name}-${colorName(colorId)}-${sizeName(sizeId)}`,
+            )
+              .toUpperCase()
+              .slice(0, 40);
+            const sku = await storeApi.createSku(created.id, {
+              colorId,
+              sizeId,
+              code: code || `SKU-${Date.now().toString(36)}`,
+              price: unitPrice,
+              active: true,
+            });
+            if (stockEach > 0) {
+              try {
+                await storeApi.adjustStock({
+                  skuId: sku.id,
+                  delta: stockEach,
+                  reason: "Nhập tồn khi tạo sản phẩm",
+                });
+              } catch {
+                // Tạo SP vẫn thành công nếu kho từ chối
+              }
+            }
+          }
         }
 
         await refresh();
@@ -337,58 +389,17 @@ export function useAdmin() {
   return ctx;
 }
 
-export function orderStateLabel(state: number) {
-  switch (state) {
-    case 0:
-      return "Processing";
-    case 1:
-      return "Confirmed";
-    case 2:
-      return "Shipped";
-    case 3:
-      return "Delivered";
-    case 4:
-      return "Canceled";
-    default:
-      return String(state);
-  }
-}
-
-export function paymentStateLabel(state: number) {
-  switch (state) {
-    case 0:
-      return "Unpaid";
-    case 1:
-      return "Collected";
-    case 2:
-      return "Partial refund";
-    case 3:
-      return "Refunded";
-    default:
-      return String(state);
-  }
-}
-
-export function returnStateLabel(state: number) {
-  switch (state) {
-    case 0:
-      return "Requested";
-    case 1:
-      return "Approved";
-    case 2:
-      return "Rejected";
-    case 3:
-      return "Received";
-    case 4:
-      return "Completed";
-    default:
-      return String(state);
-  }
-}
-
-export function returnKindLabel(kind: number) {
-  return kind === 1 ? "Exchange" : "Refund";
-}
+export {
+  orderStateKey,
+  paymentStateKey,
+  returnStateKey,
+  returnKindKey,
+  orderStatusCanonFromState,
+  orderStatusCanonFromDemo,
+  orderStatusKeyFromCanon,
+  orderStatusTone,
+} from "@/lib/status-labels";
+export type { OrderStatusCanon } from "@/lib/status-labels";
 
 export function formatOrderAmount(amount: number) {
   return formatVnd(amount);

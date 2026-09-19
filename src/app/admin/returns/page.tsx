@@ -8,11 +8,12 @@ import {
   type ReturnDto,
 } from "@/lib/api";
 import {
-  returnKindLabel,
-  returnStateLabel,
+  returnKindKey,
+  returnStateKey,
   useAdmin,
 } from "@/context/AdminContext";
 import { useAuth } from "@/context/AuthContext";
+import { useLocale } from "@/context/LocaleContext";
 
 const NEXT_ACTIONS: Partial<
   Record<ReturnState, { state: ReturnState; label: string }[]>
@@ -33,6 +34,7 @@ const NEXT_ACTIONS: Partial<
 export default function AdminReturnsPage() {
   const { fromApi, error: adminError, refresh } = useAdmin();
   const { isAuthenticated } = useAuth();
+  const { t } = useLocale();
   const [items, setItems] = useState<ReturnDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -99,10 +101,10 @@ export default function AdminReturnsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight">Returns</h1>
-        <p className="mt-1 text-sm text-white/55">
-          Đổi size / trả hàng · duyệt → nhận → hoàn tất
-        </p>
+        <h1 className="text-3xl font-extrabold tracking-tight">
+          {t("admin.returnsTitle")}
+        </h1>
+        <p className="mt-1 text-sm text-white/55">{t("admin.returnsSubtitle")}</p>
         {adminError || error ? (
           <p className="mt-1 text-xs text-amber-200/80">{error || adminError}</p>
         ) : null}
@@ -110,7 +112,7 @@ export default function AdminReturnsPage() {
 
       {!fromApi && !isAuthenticated ? (
         <div className="admin-card p-6 text-sm text-white/60">
-          Đăng nhập tài khoản có quyền Returns.Manage để xử lý đổi trả.
+          {t("admin.returnsNeedPerm")}
         </div>
       ) : (
         <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
@@ -143,14 +145,14 @@ export default function AdminReturnsPage() {
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <span className="font-semibold">
-                          {returnKindLabel(item.kind)} · x{item.quantity}
+                          {t(returnKindKey(item.kind))} · x{item.quantity}
                         </span>
                         <span className="text-xs font-bold text-white/55">
-                          {returnStateLabel(item.state)}
+                          {t(returnStateKey(item.state))}
                         </span>
                       </div>
                       <p className="mt-1 text-xs text-white/45">
-                        Order {item.orderId.slice(0, 8)}… ·{" "}
+                        {t("admin.returnsOrder")} {item.orderId.slice(0, 8)}… ·{" "}
                         {item.reason || "Không có lý do"} · hoàn{" "}
                         {formatVnd(item.refundAmount)}
                       </p>
@@ -176,8 +178,8 @@ export default function AdminReturnsPage() {
                     Chi tiết
                   </p>
                   <h2 className="mt-1 text-xl font-extrabold">
-                    {returnKindLabel(selected.kind)} ·{" "}
-                    {returnStateLabel(selected.state)}
+                    {t(returnKindKey(selected.kind))} ·{" "}
+                    {t(returnStateKey(selected.state))}
                   </h2>
                   <dl className="mt-3 space-y-1 text-sm text-white/60">
                     <div>Số lượng: {selected.quantity}</div>
@@ -234,8 +236,9 @@ export default function AdminReturnsPage() {
                   </>
                 ) : (
                   <p className="text-sm text-white/50">
-                    Yêu cầu đã {returnStateLabel(selected.state)} — không còn bước
-                    tiếp.
+                    {t("admin.returnStatusDone", {
+                      status: t(returnStateKey(selected.state)),
+                    })}
                   </p>
                 )}
               </>

@@ -13,7 +13,8 @@ export default function AdminTopBar() {
           {t("common.store")}
         </p>
         <p className="text-sm text-white/65">
-          {t("admin.dash")} / <span className="text-white">Admin</span>
+          {t("admin.dash")} /{" "}
+          <span className="text-white">{t("admin.brandAdmin")}</span>
         </p>
       </div>
       <div className="flex items-center gap-3">
@@ -27,7 +28,7 @@ export default function AdminTopBar() {
         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#ed3b6b]/20 text-sm font-bold text-[#ed3b6b]">
           A
         </div>
-        <span className="text-sm font-semibold">ADMIN</span>
+        <span className="text-sm font-semibold">{t("admin.roleBadge")}</span>
       </div>
     </header>
   );

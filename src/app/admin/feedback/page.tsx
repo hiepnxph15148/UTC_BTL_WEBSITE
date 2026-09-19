@@ -2,12 +2,20 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useLocale } from "@/context/LocaleContext";
 import { listContactMessages, type ContactMessage } from "@/lib/api";
+import type { MessageKey } from "@/i18n/messages";
 
 const statusStyle: Record<string, string> = {
   Open: "bg-orange-400/15 text-orange-300",
   Reviewed: "bg-sky-400/15 text-sky-300",
   Closed: "bg-white/10 text-white/60",
+};
+
+const statusKey: Record<string, MessageKey> = {
+  Open: "admin.feedbackOpen",
+  Reviewed: "admin.feedbackReviewed",
+  Closed: "admin.feedbackClosed",
 };
 
 const topicStyle: Record<string, string> = {
@@ -17,19 +25,9 @@ const topicStyle: Record<string, string> = {
   other: "bg-white/10 text-white/70",
 };
 
-function formatDate(iso: string) {
-  try {
-    return new Date(iso).toLocaleString("vi-VN", {
-      dateStyle: "short",
-      timeStyle: "short",
-    });
-  } catch {
-    return iso;
-  }
-}
-
 export default function AdminFeedbackPage() {
   const { isAuthenticated, hydrated } = useAuth();
+  const { t, dateLocale } = useLocale();
   const [items, setItems] = useState<ContactMessage[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,24 +58,35 @@ export default function AdminFeedbackPage() {
 
   const openCount = items.filter((f) => f.status === "Open").length;
 
+  const formatDate = (iso: string) => {
+    try {
+      return new Date(iso).toLocaleString(dateLocale, {
+        dateStyle: "short",
+        timeStyle: "short",
+      });
+    } catch {
+      return iso;
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight">
-            Góp ý & phản ánh
+            {t("admin.feedback")}
           </h1>
           <p className="mt-1 text-sm text-white/55">
-            Liên hệ gửi từ form /contact
+            {t("admin.feedbackSubtitle")}
           </p>
         </div>
         <p className="rounded-full border border-[#ed3b6b]/35 bg-[#ed3b6b]/10 px-3 py-1.5 text-xs font-bold text-[#ed3b6b]">
-          {openCount} đang mở
+          {t("admin.feedbackOpenCount", { count: openCount })}
         </p>
       </div>
 
       {loading ? (
-        <p className="text-sm text-white/50">Đang tải…</p>
+        <p className="text-sm text-white/50">{t("common.loading")}</p>
       ) : null}
       {error ? (
         <p className="text-sm font-medium text-rose-400">{error}</p>
@@ -98,9 +107,9 @@ export default function AdminFeedbackPage() {
                     {item.subject}
                   </span>
                   <span
-                    className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${statusStyle[item.status]}`}
+                    className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${statusStyle[item.status] || statusStyle.Closed}`}
                   >
-                    {item.status}
+                    {t(statusKey[item.status] || "admin.feedbackClosed")}
                   </span>
                   <span className="text-xs text-white/40">{item.id}</span>
                 </div>

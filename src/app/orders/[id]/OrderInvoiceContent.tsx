@@ -7,7 +7,6 @@ import PageShell from "@/components/PageShell";
 import { useAuth } from "@/context/AuthContext";
 import { useLocale } from "@/context/LocaleContext";
 import {
-  CodState,
   formatVnd,
   OrderState,
   ReturnKind,
@@ -15,7 +14,6 @@ import {
   type OrderDetailDto,
   type OrderLineDto,
 } from "@/lib/api";
-import type { MessageKey } from "@/i18n/messages";
 import {
   displayOrderNumber,
   displayProductName,
@@ -23,38 +21,7 @@ import {
   looksLikeUuid,
 } from "@/lib/format-display";
 import { REASON_MIN_LENGTH, isNonEmpty } from "@/lib/validation";
-
-function orderStateKey(state: number): MessageKey {
-  switch (state) {
-    case OrderState.Pending:
-      return "orders.pending";
-    case OrderState.Confirmed:
-      return "orders.confirmed";
-    case OrderState.Shipped:
-      return "orders.shipped";
-    case OrderState.Delivered:
-      return "orders.delivered";
-    case OrderState.Cancelled:
-      return "orders.cancelled";
-    default:
-      return "orders.title";
-  }
-}
-
-function paymentKey(state: number): MessageKey {
-  switch (state) {
-    case CodState.Unpaid:
-      return "pay.unpaid";
-    case CodState.Collected:
-      return "pay.collected";
-    case CodState.PartiallyRefunded:
-      return "pay.partial";
-    case CodState.Refunded:
-      return "pay.refunded";
-    default:
-      return "invoice.title";
-  }
-}
+import { orderStateKey, paymentStateKey } from "@/lib/status-labels";
 
 type ReturnFormState = {
   kind: ReturnKind;
@@ -289,7 +256,7 @@ export default function OrderInvoiceContent() {
               {displayOrderNumber(order.number, order.id)}
             </h2>
             <p className="mt-1 text-sm text-white/55">
-              {t(orderStateKey(order.state))} · {t(paymentKey(order.paymentState))}
+              {t(orderStateKey(order.state))} · {t(paymentStateKey(order.paymentState))}
             </p>
           </div>
           <div className="text-right text-sm text-white/55">

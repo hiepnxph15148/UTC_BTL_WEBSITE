@@ -12,6 +12,7 @@ import {
   type SkuDto,
 } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { useLocale } from "@/context/LocaleContext";
 import {
   PRODUCT_IMAGE_ACCEPT,
   validateProductImageFile,
@@ -21,6 +22,7 @@ export default function AdminProductDetailPage() {
   const params = useParams<{ id: string }>();
   const productId = params.id;
   const { isAuthenticated } = useAuth();
+  const { t } = useLocale();
 
   const [product, setProduct] = useState<ProductDto | null>(null);
   const [skus, setSkus] = useState<SkuDto[]>([]);
@@ -75,8 +77,12 @@ export default function AdminProductDetailPage() {
 
       setCategories(lookups.filter((l) => l.kind === LookupKind.Category));
       setBrands(lookups.filter((l) => l.kind === LookupKind.Brand));
-      const colorList = lookups.filter((l) => l.kind === LookupKind.Color && l.active);
-      const sizeList = lookups.filter((l) => l.kind === LookupKind.Size && l.active);
+      const colorList = lookups.filter(
+        (l) => Number(l.kind) === LookupKind.Color && l.active,
+      );
+      const sizeList = lookups.filter(
+        (l) => Number(l.kind) === LookupKind.Size && l.active,
+      );
       setColors(colorList);
       setSizes(sizeList);
       setSkuColorId(colorList[0]?.id || "");
@@ -255,7 +261,7 @@ export default function AdminProductDetailPage() {
             href="/admin/products"
             className="text-xs font-semibold text-white/50 hover:text-white"
           >
-            ← All Products
+            {t("admin.productsBack")}
           </Link>
           <h1 className="mt-2 text-3xl font-extrabold">{product.name}</h1>
           <p className="mt-1 text-sm text-white/55">Sửa sản phẩm · ảnh · SKU</p>
@@ -297,7 +303,7 @@ export default function AdminProductDetailPage() {
           </label>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block text-xs text-white/50">
-              Category
+              {t("admin.productCategory")}
               <select
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
@@ -305,13 +311,14 @@ export default function AdminProductDetailPage() {
               >
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.name} {!c.active ? "(off)" : ""}
+                    {c.name}{" "}
+                    {!c.active ? `(${t("admin.productOff")})` : ""}
                   </option>
                 ))}
               </select>
             </label>
             <label className="block text-xs text-white/50">
-              Brand
+              {t("admin.productBrand")}
               <select
                 value={brandId}
                 onChange={(e) => setBrandId(e.target.value)}
@@ -319,7 +326,8 @@ export default function AdminProductDetailPage() {
               >
                 {brands.map((b) => (
                   <option key={b.id} value={b.id}>
-                    {b.name} {!b.active ? "(off)" : ""}
+                    {b.name}{" "}
+                    {!b.active ? `(${t("admin.productOff")})` : ""}
                   </option>
                 ))}
               </select>
@@ -331,7 +339,7 @@ export default function AdminProductDetailPage() {
               checked={published}
               onChange={(e) => setPublished(e.target.checked)}
             />
-            Published
+            {t("admin.productPublished")}
           </label>
           <button
             type="submit"
@@ -355,7 +363,7 @@ export default function AdminProductDetailPage() {
             <p className="text-sm text-white/45">Chưa có ảnh</p>
           )}
           <label className="block text-xs text-white/50">
-            Upload file
+            {t("admin.productUpload")}
             <input
               type="file"
               accept={PRODUCT_IMAGE_ACCEPT}
@@ -405,12 +413,17 @@ export default function AdminProductDetailPage() {
               value={skuColorId}
               onChange={(e) => setSkuColorId(e.target.value)}
               className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm outline-none"
+              required
             >
-              {colors.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
+              {!colors.length ? (
+                <option value="">Chưa có màu — tạo ở Danh mục</option>
+              ) : (
+                colors.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))
+              )}
             </select>
           </label>
           <label className="block text-xs text-white/50">
@@ -419,12 +432,17 @@ export default function AdminProductDetailPage() {
               value={skuSizeId}
               onChange={(e) => setSkuSizeId(e.target.value)}
               className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm outline-none"
+              required
             >
-              {sizes.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
+              {!sizes.length ? (
+                <option value="">Chưa có size — tạo ở Danh mục</option>
+              ) : (
+                sizes.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))
+              )}
             </select>
           </label>
           <label className="block text-xs text-white/50">
@@ -448,11 +466,20 @@ export default function AdminProductDetailPage() {
           </label>
           <button
             type="submit"
-            disabled={busy}
+            disabled={busy || !colors.length || !sizes.length}
             className="rounded-xl bg-[#ed3b6b] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
           >
             Tạo SKU
           </button>
+          {!colors.length || !sizes.length ? (
+            <p className="text-xs text-amber-200/80">
+              Cần có màu và size active trong{" "}
+              <Link href="/admin/categories" className="underline">
+                Danh mục
+              </Link>
+              .
+            </p>
+          ) : null}
         </form>
 
         <div className="admin-card p-5">
@@ -469,7 +496,9 @@ export default function AdminProductDetailPage() {
                     <p className="mt-1 text-xs text-white/45">
                       {lookupName(colors, sku.colorId)} /{" "}
                       {lookupName(sizes, sku.sizeId)} · tồn {sku.available} ·{" "}
-                      {sku.active ? "active" : "off"}
+                      {sku.active
+                        ? t("admin.productActive")
+                        : t("admin.productOff")}
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">

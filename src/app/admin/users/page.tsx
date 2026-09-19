@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { identityApi } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { useLocale } from "@/context/LocaleContext";
 
 type IdentityUser = {
   id?: string;
@@ -18,6 +19,7 @@ type IdentityRole = {
 
 export default function AdminUsersPage() {
   const { isAuthenticated } = useAuth();
+  const { t } = useLocale();
   const [users, setUsers] = useState<IdentityUser[]>([]);
   const [roles, setRoles] = useState<IdentityRole[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -119,10 +121,10 @@ export default function AdminUsersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight">Users</h1>
-        <p className="mt-1 text-sm text-white/55">
-          Identity users · tạo tài khoản · gán roles
-        </p>
+        <h1 className="text-3xl font-extrabold tracking-tight">
+          {t("admin.usersTitle")}
+        </h1>
+        <p className="mt-1 text-sm text-white/55">{t("admin.usersSubtitle")}</p>
         {error ? (
           <p className="mt-1 text-xs text-amber-200/80">{error}</p>
         ) : null}
@@ -130,14 +132,14 @@ export default function AdminUsersPage() {
 
       {!isAuthenticated ? (
         <div className="admin-card p-6 text-sm text-white/60">
-          Đăng nhập admin có quyền Identity để quản lý users.
+          {t("admin.usersNeedPerm")}
         </div>
       ) : (
         <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
           <form onSubmit={create} className="admin-card space-y-3 p-5">
             <h2 className="text-lg font-bold">Tạo user</h2>
             <label className="block text-xs text-white/50">
-              User name
+              {t("admin.userName")}
               <input
                 required
                 value={form.userName}
@@ -148,7 +150,7 @@ export default function AdminUsersPage() {
               />
             </label>
             <label className="block text-xs text-white/50">
-              Email
+              {t("admin.email")}
               <input
                 required
                 type="email"
@@ -160,7 +162,7 @@ export default function AdminUsersPage() {
               />
             </label>
             <label className="block text-xs text-white/50">
-              Password
+              {t("admin.password")}
               <input
                 required
                 type="password"
@@ -302,7 +304,7 @@ export default function AdminUsersPage() {
                         "Permission name (vd ShoeStore.Orders.Manage)",
                       );
                       if (!perm) return;
-                      const grant = window.confirm("Grant?");
+                      const grant = window.confirm(t("admin.grantConfirm"));
                       setBusy(true);
                       try {
                         await identityApi.getPermissions("U", selectedId);
@@ -320,7 +322,7 @@ export default function AdminUsersPage() {
                       }
                     }}
                   >
-                    Set permission
+                    {t("admin.setPermission")}
                   </button>
                   <button
                     type="button"
@@ -346,7 +348,9 @@ export default function AdminUsersPage() {
                   </button>
                 </div>
                 <div className="mt-4 border-t border-white/10 pt-3">
-                  <p className="mb-2 text-xs font-bold text-white/50">Roles CRUD</p>
+                  <p className="mb-2 text-xs font-bold text-white/50">
+                    {t("admin.rolesCrud")}
+                  </p>
                   <button
                     type="button"
                     className="rounded-xl border border-white/15 px-3 py-2 text-xs font-bold"

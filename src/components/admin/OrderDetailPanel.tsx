@@ -16,10 +16,11 @@ import {
 } from "@/lib/format-display";
 import {
   formatOrderAmount,
-  orderStateLabel,
-  paymentStateLabel,
+  orderStateKey,
+  paymentStateKey,
   useAdmin,
 } from "@/context/AdminContext";
+import { useLocale } from "@/context/LocaleContext";
 
 type Props = {
   order: OrderDto;
@@ -29,6 +30,7 @@ type Props = {
 
 export default function OrderDetailPanel({ order, onClose, onChanged }: Props) {
   const { fromApi } = useAdmin();
+  const { t } = useLocale();
   const [detail, setDetail] = useState<OrderDetailDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -81,32 +83,32 @@ export default function OrderDetailPanel({ order, onClose, onChanged }: Props) {
   const addressLines = formatAddressLines(current.addressSnapshot);
 
   return (
-    <div className="admin-card flex max-h-[min(82vh,820px)] flex-col overflow-hidden">
-      <div className="flex items-start justify-between gap-3 border-b border-white/10 px-5 py-4">
-        <div>
+    <div className="admin-card relative z-10 flex max-h-[min(82vh,820px)] min-w-0 flex-col overflow-hidden">
+      <div className="relative z-20 flex shrink-0 items-start justify-between gap-3 border-b border-white/10 bg-[#16161e] px-5 py-4">
+        <div className="min-w-0 flex-1 pr-2">
           <p className="text-xs uppercase tracking-[0.18em] text-white/40">
-            Chi tiết đơn
+            {t("admin.orderDetail")}
           </p>
-          <h3 className="mt-1 text-xl font-extrabold">
+          <h3 className="mt-1 truncate text-xl font-extrabold">
             {displayOrderNumber(current.number, current.id)}
           </h3>
-          <p className="mt-1 text-sm text-white/55">
-            {orderStateLabel(current.state)} · {paymentStateLabel(current.paymentState)} ·{" "}
+          <p className="mt-1 break-words text-sm text-white/55">
+            {t(orderStateKey(current.state))} · {t(paymentStateKey(current.paymentState))} ·{" "}
             {formatOrderAmount(current.total)}
           </p>
         </div>
         <button
           type="button"
           onClick={onClose}
-          className="rounded-lg border border-white/15 px-3 py-1.5 text-xs font-semibold text-white/70 hover:bg-white/5"
+          className="relative z-20 shrink-0 rounded-lg border border-white/15 bg-[#1a1a22] px-3 py-1.5 text-xs font-semibold text-white/80 hover:bg-white/10"
         >
-          Đóng
+          {t("admin.close")}
         </button>
       </div>
 
       <div className="flex-1 space-y-5 overflow-y-auto px-5 py-4">
         {loading ? (
-          <p className="text-sm text-white/45">Đang tải chi tiết…</p>
+          <p className="text-sm text-white/45">{t("admin.orderLoadDetail")}</p>
         ) : null}
         {error ? (
           <p className="rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-sm text-amber-100">
@@ -115,34 +117,36 @@ export default function OrderDetailPanel({ order, onClose, onChanged }: Props) {
         ) : null}
 
         <section>
-          <h4 className="text-sm font-bold text-white/80">Khách / địa chỉ</h4>
+          <h4 className="text-sm font-bold text-white/80">
+            {t("admin.orderCustomerAddr")}
+          </h4>
           <ul className="mt-2 space-y-1 text-sm text-white/60">
             {addressLines.length ? (
               addressLines.map((line) => <li key={line}>{line}</li>)
             ) : (
-              <li>Không có snapshot địa chỉ</li>
+              <li>{t("admin.orderNoAddress")}</li>
             )}
           </ul>
           <dl className="mt-3 grid grid-cols-2 gap-2 text-xs text-white/50">
             <div>
-              <dt>Subtotal</dt>
+              <dt>{t("invoice.subtotal")}</dt>
               <dd className="text-white/80">{formatVnd(current.subtotal)}</dd>
             </div>
             <div>
-              <dt>Giảm giá</dt>
+              <dt>{t("invoice.discount")}</dt>
               <dd className="text-white/80">{formatVnd(current.discount)}</dd>
             </div>
             <div>
-              <dt>Ship</dt>
+              <dt>{t("invoice.ship")}</dt>
               <dd className="text-white/80">{formatVnd(current.shippingFee)}</dd>
             </div>
             <div>
-              <dt>Hoàn</dt>
+              <dt>{t("admin.orderRefund")}</dt>
               <dd className="text-white/80">{formatVnd(current.refunded)}</dd>
             </div>
             {current.carrier ? (
               <div className="col-span-2">
-                <dt>Vận chuyển</dt>
+                <dt>{t("admin.orderShipping")}</dt>
                 <dd className="text-white/80">
                   {current.carrier} · {current.trackingCode || "—"}
                 </dd>
@@ -150,7 +154,7 @@ export default function OrderDetailPanel({ order, onClose, onChanged }: Props) {
             ) : null}
             {current.state === OrderState.Pending ? (
               <div className="col-span-2">
-                <dt>Hết hạn giữ hàng</dt>
+                <dt>{t("admin.orderReserveExpires")}</dt>
                 <dd className="text-white/80">
                   {current.reservationExpiresAt
                     ? new Date(current.reservationExpiresAt).toLocaleString("vi-VN")
@@ -162,7 +166,9 @@ export default function OrderDetailPanel({ order, onClose, onChanged }: Props) {
         </section>
 
         <section>
-          <h4 className="text-sm font-bold text-white/80">Sản phẩm</h4>
+          <h4 className="text-sm font-bold text-white/80">
+            {t("admin.colProduct")}
+          </h4>
           <ul className="mt-2 space-y-2">
             {(detail?.items || []).map((item) => (
               <li
@@ -188,7 +194,9 @@ export default function OrderDetailPanel({ order, onClose, onChanged }: Props) {
         </section>
 
         <section>
-          <h4 className="text-sm font-bold text-white/80">Lịch sử</h4>
+          <h4 className="text-sm font-bold text-white/80">
+            {t("admin.orderHistory")}
+          </h4>
           <ul className="mt-2 max-h-40 space-y-2 overflow-y-auto">
             {(detail?.history || []).map((h, i) => (
               <li key={`${h.at}-${i}`} className="text-xs text-white/50">
@@ -207,20 +215,22 @@ export default function OrderDetailPanel({ order, onClose, onChanged }: Props) {
 
         {fromApi ? (
           <section className="space-y-3 border-t border-white/10 pt-4">
-            <h4 className="text-sm font-bold text-white/80">Thao tác</h4>
+            <h4 className="text-sm font-bold text-white/80">
+              {t("admin.orderActions")}
+            </h4>
 
             {(current.state === OrderState.Confirmed ||
               current.state === OrderState.Pending ||
               current.state === OrderState.Shipped ||
               current.state === OrderState.Delivered) && (
               <label className="block text-xs text-white/50">
-                Ghi chú
+                {t("admin.orderNote")}
                 <textarea
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   rows={2}
                   className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm text-white outline-none focus:border-[#ed3b6b]/50"
-                  placeholder="Lý do hủy / thu COD / ghi chú nội bộ…"
+                  placeholder={t("admin.orderNotePh")}
                 />
               </label>
             )}
@@ -228,7 +238,7 @@ export default function OrderDetailPanel({ order, onClose, onChanged }: Props) {
             {current.state === OrderState.Confirmed ? (
               <div className="grid gap-2 sm:grid-cols-2">
                 <label className="block text-xs text-white/50">
-                  Đơn vị vận chuyển
+                  {t("admin.orderCarrier")}
                   <input
                     value={carrier}
                     onChange={(e) => setCarrier(e.target.value)}
@@ -236,7 +246,7 @@ export default function OrderDetailPanel({ order, onClose, onChanged }: Props) {
                   />
                 </label>
                 <label className="block text-xs text-white/50">
-                  Mã vận đơn
+                  {t("admin.orderTracking")}
                   <input
                     value={trackingCode}
                     onChange={(e) => setTrackingCode(e.target.value)}
@@ -255,7 +265,7 @@ export default function OrderDetailPanel({ order, onClose, onChanged }: Props) {
                   onClick={() => run(() => storeApi.confirmOrder(current.id))}
                   className="rounded-xl bg-[#ed3b6b] px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
                 >
-                  Xác nhận đơn
+                  {t("admin.orderConfirm")}
                 </button>
               ) : null}
 
@@ -273,7 +283,7 @@ export default function OrderDetailPanel({ order, onClose, onChanged }: Props) {
                   }
                   className="rounded-xl bg-sky-500 px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
                 >
-                  Bàn giao vận chuyển
+                  {t("admin.orderShip")}
                 </button>
               ) : null}
 
@@ -285,7 +295,7 @@ export default function OrderDetailPanel({ order, onClose, onChanged }: Props) {
                     onClick={() => run(() => storeApi.deliverOrder(current.id))}
                     className="rounded-xl bg-emerald-500 px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
                   >
-                    Đã giao khách
+                    {t("admin.orderDelivered")}
                   </button>
                   <button
                     type="button"
@@ -299,7 +309,7 @@ export default function OrderDetailPanel({ order, onClose, onChanged }: Props) {
                     }
                     className="rounded-xl border border-orange-400/40 px-3 py-2 text-xs font-bold text-orange-200 disabled:opacity-50"
                   >
-                    Nhận hàng hoàn
+                    {t("admin.orderReceiveFailed")}
                   </button>
                 </>
               ) : null}
@@ -318,7 +328,7 @@ export default function OrderDetailPanel({ order, onClose, onChanged }: Props) {
                   }
                   className="rounded-xl bg-[#c6e600] px-3 py-2 text-xs font-bold text-black disabled:opacity-50"
                 >
-                  Thu COD
+                  {t("admin.orderCollectCod")}
                 </button>
               ) : null}
 
@@ -336,7 +346,7 @@ export default function OrderDetailPanel({ order, onClose, onChanged }: Props) {
                   }
                   className="rounded-xl border border-white/20 px-3 py-2 text-xs font-bold text-white/80 disabled:opacity-50"
                 >
-                  Hủy đơn
+                  {t("admin.orderCancel")}
                 </button>
               )}
 
@@ -350,13 +360,13 @@ export default function OrderDetailPanel({ order, onClose, onChanged }: Props) {
                 }
                 className="rounded-xl border border-white/15 px-3 py-2 text-xs font-bold text-white/70 disabled:opacity-50"
               >
-                Thêm ghi chú nội bộ
+                {t("admin.orderAddNote")}
               </button>
             </div>
           </section>
         ) : (
           <p className="text-sm text-amber-200/80">
-            Đăng nhập tài khoản có quyền Orders.Manage để xử lý đơn qua API.
+            {t("admin.orderNeedPerm")}
           </p>
         )}
       </div>

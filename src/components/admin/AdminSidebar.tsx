@@ -104,7 +104,7 @@ export default function AdminSidebar() {
           className="h-6 w-auto mix-blend-lighten"
         />
         <span className="rounded-md bg-[#ed3b6b]/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[#ed3b6b]">
-          Admin
+          {t("admin.brandAdmin")}
         </span>
       </div>
 

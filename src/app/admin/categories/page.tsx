@@ -7,16 +7,40 @@ import {
   type LookupDto,
 } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { useLocale } from "@/context/LocaleContext";
+import type { MessageKey } from "@/i18n/messages";
 
-const TABS: { kind: LookupKind; label: string }[] = [
-  { kind: LookupKind.Category, label: "Category" },
-  { kind: LookupKind.Brand, label: "Brand" },
-  { kind: LookupKind.Color, label: "Color" },
-  { kind: LookupKind.Size, label: "Size" },
-];
+const TABS: { kind: LookupKind; labelKey: MessageKey; placeholder: string }[] =
+  [
+    {
+      kind: LookupKind.Category,
+      labelKey: "admin.lookupCategory",
+      placeholder: "Ví dụ: Lifestyle",
+    },
+    {
+      kind: LookupKind.Brand,
+      labelKey: "admin.lookupBrand",
+      placeholder: "Ví dụ: Nike",
+    },
+    {
+      kind: LookupKind.Color,
+      labelKey: "admin.lookupColor",
+      placeholder: "Ví dụ: White / Đen / #ffffff",
+    },
+    {
+      kind: LookupKind.Size,
+      labelKey: "admin.lookupSize",
+      placeholder: "Ví dụ: 40",
+    },
+  ];
+
+function sameKind(a: number | string, b: LookupKind) {
+  return Number(a) === Number(b);
+}
 
 export default function AdminLookupsPage() {
   const { isAuthenticated } = useAuth();
+  const { t } = useLocale();
   const [kind, setKind] = useState(LookupKind.Category);
   const [items, setItems] = useState<LookupDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,14 +50,21 @@ export default function AdminLookupsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
 
+  const activeTab = TABS.find((tab) => tab.kind === kind) || TABS[0];
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      // Admin cần cả inactive — API lookups công khai chỉ active.
-      // Gọi không filter rồi lọc client theo kind.
-      const all = await storeApi.getLookups();
-      setItems(all.filter((l) => l.kind === kind));
+      // Gọi theo kind trước; nếu API bỏ qua kind thì lọc thêm phía client.
+      const byKind = await storeApi.getLookups(kind);
+      const filtered = byKind.filter((l) => sameKind(l.kind, kind));
+      if (filtered.length || byKind.length === 0) {
+        setItems(filtered);
+      } else {
+        const all = await storeApi.getLookups();
+        setItems(all.filter((l) => sameKind(l.kind, kind)));
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không tải được lookups");
       setItems([]);
@@ -52,12 +83,17 @@ export default function AdminLookupsPage() {
     setBusy(true);
     setError(null);
     try {
-      await storeApi.createLookup({
-        kind,
+      const created = await storeApi.createLookup({
+        kind: Number(kind) as LookupKind,
         name: name.trim(),
         active: true,
       });
       setName("");
+      // Optimistic: hiện ngay nếu API chưa trả về trong list
+      setItems((prev) => {
+        if (prev.some((p) => p.id === created.id)) return prev;
+        return [created, ...prev];
+      });
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Tạo thất bại");
@@ -72,7 +108,7 @@ export default function AdminLookupsPage() {
     setError(null);
     try {
       await storeApi.updateLookup(item.id, {
-        kind: item.kind,
+        kind: Number(item.kind) as LookupKind,
         name: editName.trim(),
         active: item.active,
       });
@@ -91,7 +127,7 @@ export default function AdminLookupsPage() {
     setError(null);
     try {
       await storeApi.updateLookup(item.id, {
-        kind: item.kind,
+        kind: Number(item.kind) as LookupKind,
         name: item.name || "",
         active: !item.active,
       });
@@ -106,10 +142,8 @@ export default function AdminLookupsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-extrabold">Lookups</h1>
-        <p className="mt-1 text-sm text-white/55">
-          Category · Brand · Color · Size — tạo, sửa tên, bật/tắt
-        </p>
+        <h1 className="text-3xl font-extrabold">{t("admin.lookupTitle")}</h1>
+        <p className="mt-1 text-sm text-white/55">{t("admin.lookupSubtitle")}</p>
         {error ? (
           <p className="mt-1 text-xs text-amber-200/80">{error}</p>
         ) : null}
@@ -123,6 +157,7 @@ export default function AdminLookupsPage() {
             onClick={() => {
               setKind(tab.kind);
               setEditingId(null);
+              setName("");
             }}
             className={`rounded-xl px-4 py-2 text-sm font-bold transition ${
               kind === tab.kind
@@ -130,7 +165,7 @@ export default function AdminLookupsPage() {
                 : "bg-white/10 text-white/70 hover:bg-white/15"
             }`}
           >
-            {tab.label}
+            {t(tab.labelKey)}
           </button>
         ))}
       </div>
@@ -143,7 +178,7 @@ export default function AdminLookupsPage() {
         <div className="grid gap-4 xl:grid-cols-[0.85fr_1.15fr]">
           <form onSubmit={create} className="admin-card space-y-3 p-5">
             <h2 className="text-lg font-bold">
-              Tạo {TABS.find((t) => t.kind === kind)?.label}
+              Tạo {t(activeTab.labelKey)}
             </h2>
             <label className="block text-xs text-white/50">
               Tên
@@ -152,21 +187,23 @@ export default function AdminLookupsPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm text-white outline-none ring-[#ed3b6b] focus:ring-2"
-                placeholder="Ví dụ: Lifestyle"
+                placeholder={activeTab.placeholder}
               />
             </label>
             <button
               type="submit"
-              disabled={busy}
+              disabled={busy || !name.trim()}
               className="rounded-xl bg-[#ed3b6b] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
             >
-              {busy ? "Đang lưu…" : "Tạo"}
+              {busy ? "Đang lưu…" : `Tạo ${t(activeTab.labelKey).toLowerCase()}`}
             </button>
           </form>
 
           <div className="admin-card p-5">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold">Danh sách</h2>
+              <h2 className="text-lg font-bold">
+                Danh sách {t(activeTab.labelKey).toLowerCase()}
+              </h2>
               <button
                 type="button"
                 onClick={() => void load()}
@@ -202,7 +239,9 @@ export default function AdminLookupsPage() {
                                   : "text-white/40"
                               }`}
                             >
-                              {item.active ? "active" : "inactive"}
+                              {item.active
+                                ? t("admin.lookupActive")
+                                : t("admin.lookupInactive")}
                             </span>
                           </p>
                         )}
@@ -255,7 +294,8 @@ export default function AdminLookupsPage() {
                 ))}
                 {!items.length ? (
                   <li className="py-8 text-center text-sm text-white/45">
-                    Chưa có bản ghi
+                    Chưa có bản ghi — hãy tạo {t(activeTab.labelKey).toLowerCase()}{" "}
+                    bên trái.
                   </li>
                 ) : null}
               </ul>

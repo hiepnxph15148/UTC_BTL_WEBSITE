@@ -16,10 +16,11 @@ import {
   usernameError,
 } from "@/lib/validation";
 
+import { isAdminUserName } from "@/lib/admin-access";
+
 function resolveAfterLogin(userName: string, nextParam: string | null) {
   if (nextParam && nextParam !== "/") return nextParam;
-  const name = userName.trim().toLowerCase();
-  if (name === "admin" || name === "store-manager") return "/admin";
+  if (isAdminUserName(userName)) return "/admin";
   return nextParam || "/";
 }
 

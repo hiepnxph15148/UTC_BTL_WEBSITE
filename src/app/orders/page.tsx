@@ -12,24 +12,7 @@ import {
   type OrderDto,
 } from "@/lib/api";
 import { displayOrderNumber, formatAddressRecipient } from "@/lib/format-display";
-import type { MessageKey } from "@/i18n/messages";
-
-function stateKey(state: number): MessageKey {
-  switch (state) {
-    case OrderState.Pending:
-      return "orders.pending";
-    case OrderState.Confirmed:
-      return "orders.confirmed";
-    case OrderState.Shipped:
-      return "orders.shipped";
-    case OrderState.Delivered:
-      return "orders.delivered";
-    case OrderState.Cancelled:
-      return "orders.cancelled";
-    default:
-      return "orders.title";
-  }
-}
+import { orderStateKey } from "@/lib/status-labels";
 
 export default function MyOrdersPage() {
   const { isAuthenticated, hydrated } = useAuth();
@@ -134,7 +117,7 @@ export default function MyOrdersPage() {
                   {displayOrderNumber(order.number, order.id)}
                 </p>
                 <p className="mt-1 text-sm text-white/55">
-                  {t(stateKey(order.state))} · COD · {formatVnd(order.total)}
+                  {t(orderStateKey(order.state))} · COD · {formatVnd(order.total)}
                 </p>
                 <p className="mt-1 text-xs text-white/40">
                   {formatAddressRecipient(order.addressSnapshot)}

@@ -4,10 +4,12 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { LookupKind, storeApi } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { useLocale } from "@/context/LocaleContext";
 
 export default function CreateCategoryPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
+  const { t } = useLocale();
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,9 +42,11 @@ export default function CreateCategoryPage() {
   return (
     <div className="mx-auto max-w-xl space-y-6">
       <div>
-        <h1 className="text-3xl font-extrabold">Create Category</h1>
+        <h1 className="text-3xl font-extrabold">
+          {t("admin.createCategoryTitle")}
+        </h1>
         <p className="mt-1 text-sm text-white/55">
-          Tạo lookup kind=Category qua API
+          {t("admin.createCategorySub")}
         </p>
         {error ? <p className="mt-1 text-xs text-amber-200/80">{error}</p> : null}
       </div>

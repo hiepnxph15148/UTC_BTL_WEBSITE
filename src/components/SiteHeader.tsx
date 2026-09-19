@@ -16,6 +16,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { useLocale } from "@/context/LocaleContext";
 import { storeApi, type NotificationDto } from "@/lib/api";
+import { isAdminUserName } from "@/lib/admin-access";
 import type { MessageKey } from "@/i18n/messages";
 
 const navLinks: { key: MessageKey; href: string }[] = [
@@ -88,9 +89,7 @@ export default function SiteHeader() {
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
-  const isAdminUser =
-    session?.userName?.toLowerCase() === "admin" ||
-    session?.userName?.toLowerCase() === "store-manager";
+  const isAdminUser = isAdminUserName(session?.userName);
 
   const loadNotifications = useCallback(async () => {
     if (!isAuthenticated) {

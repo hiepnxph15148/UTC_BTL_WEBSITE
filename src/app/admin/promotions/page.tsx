@@ -9,6 +9,7 @@ import {
 } from "@/lib/api";
 import { useAdmin } from "@/context/AdminContext";
 import { useAuth } from "@/context/AuthContext";
+import { useLocale } from "@/context/LocaleContext";
 
 function defaultForm() {
   const starts = new Date();
@@ -48,6 +49,7 @@ function formFromDiscount(d: DiscountDto) {
 export default function AdminDiscountsPage() {
   const { error: adminError } = useAdmin();
   const { isAuthenticated } = useAuth();
+  const { t } = useLocale();
   const [items, setItems] = useState<DiscountDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -144,10 +146,10 @@ export default function AdminDiscountsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight">Promotions</h1>
-        <p className="mt-1 text-sm text-white/55">
-          Voucher / khuyến mãi dùng ở checkout · sửa chương trình chưa dùng
-        </p>
+        <h1 className="text-3xl font-extrabold tracking-tight">
+          {t("admin.promoTitle")}
+        </h1>
+        <p className="mt-1 text-sm text-white/55">{t("admin.promoSubtitle")}</p>
         {adminError || error ? (
           <p className="mt-1 text-xs text-amber-200/80">{error || adminError}</p>
         ) : null}
@@ -155,7 +157,7 @@ export default function AdminDiscountsPage() {
 
       {!isAuthenticated ? (
         <div className="admin-card p-6 text-sm text-white/60">
-          Đăng nhập tài khoản có quyền Promotions.Manage để quản lý ưu đãi.
+          {t("admin.promoNeedPerm")}
         </div>
       ) : (
         <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
@@ -299,7 +301,7 @@ export default function AdminDiscountsPage() {
                     setForm((f) => ({ ...f, active: e.target.checked }))
                   }
                 />
-                Active
+                {t("admin.promoActive")}
               </label>
             ) : null}
             <button
@@ -359,7 +361,9 @@ export default function AdminDiscountsPage() {
                             : formatVnd(d.value)}{" "}
                           · max {formatVnd(d.maxDiscount)} · min{" "}
                           {formatVnd(d.minimumSubtotal)} ·{" "}
-                          {d.active ? "active" : "disabled"}
+                          {d.active
+                            ? t("admin.promoActive")
+                            : t("admin.promoDisabled")}
                         </p>
                       </button>
                       <div className="flex gap-2">

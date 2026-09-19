@@ -13,6 +13,7 @@ import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { AdminProduct } from "@/lib/admin-store";
 import { parsePrice } from "@/data/shoes";
+import { useLocale } from "@/context/LocaleContext";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -60,10 +61,11 @@ type Props = {
 
 export default function ProductsGrid({ products, height = 420 }: Props) {
   const router = useRouter();
+  const { t } = useLocale();
   const columnDefs = useMemo<ColDef<AdminProduct>[]>(
     () => [
       {
-        headerName: "Product",
+        headerName: t("admin.gridProduct"),
         field: "name",
         flex: 2,
         minWidth: 220,
@@ -71,14 +73,14 @@ export default function ProductsGrid({ products, height = 420 }: Props) {
         filter: true,
       },
       {
-        headerName: "Category",
+        headerName: t("admin.gridCategory"),
         field: "category",
         flex: 1,
         minWidth: 120,
         filter: true,
       },
       {
-        headerName: "Price",
+        headerName: t("admin.gridPrice"),
         field: "price",
         flex: 1,
         minWidth: 100,
@@ -88,21 +90,21 @@ export default function ProductsGrid({ products, height = 420 }: Props) {
         sortable: true,
       },
       {
-        headerName: "Stock",
+        headerName: t("admin.gridStock"),
         field: "stock",
         flex: 0.7,
         minWidth: 90,
         sortable: true,
       },
       {
-        headerName: "Sales",
+        headerName: t("admin.gridSales"),
         field: "sales",
         flex: 0.7,
         minWidth: 90,
         sortable: true,
       },
       {
-        headerName: "Source",
+        headerName: t("admin.gridSource"),
         field: "source",
         flex: 0.8,
         minWidth: 100,
@@ -114,18 +116,20 @@ export default function ProductsGrid({ products, height = 420 }: Props) {
                 : "bg-white/10 text-white/70"
             }`}
           >
-            {p.value}
+            {p.value === "custom"
+              ? t("admin.sourceCustom")
+              : t("admin.sourceSeed")}
           </span>
         ),
       },
       {
-        headerName: "Created",
+        headerName: t("admin.gridCreated"),
         field: "createdAt",
         flex: 1,
         minWidth: 120,
       },
     ],
-    [],
+    [t],
   );
 
   return (
