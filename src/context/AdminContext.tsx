@@ -42,7 +42,7 @@ export type AddProductInput = Omit<
   /** Lookup màu / size để tạo SKU sau khi tạo sản phẩm (API) */
   colorIds?: string[];
   sizeIds?: string[];
-  /** Giá SKU (VND) khi tạo qua API */
+  /** Giá SKU (đ / VND) khi tạo qua API */
   unitPrice?: number;
 };
 

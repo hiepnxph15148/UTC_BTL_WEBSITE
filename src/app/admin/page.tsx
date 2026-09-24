@@ -73,9 +73,7 @@ export default function AdminDashboardPage() {
   const stats = [
     {
       label: t("admin.statRevenue"),
-      value: report
-        ? formatVnd(totalRevenue)
-        : `$${totalRevenue.toLocaleString("en-US", { maximumFractionDigits: 0 })}`,
+      value: formatVnd(totalRevenue),
       delta: fromApi ? t("admin.statApiReport") : "+34.7%",
     },
     {
@@ -252,7 +250,7 @@ export default function AdminDashboardPage() {
                       ...order,
                       status: t(orderStatusKeyFromCanon(statusCanon)),
                       statusCanon,
-                      amountLabel: `$${order.amount.toFixed(2)}`,
+                      amountLabel: formatVnd(order.amount),
                     };
                   })
               ).map((order) => (

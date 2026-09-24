@@ -88,7 +88,8 @@ export const shoes: ShoeProduct[] = [
     id: "impact-4",
     name: "Nike Impact",
     nameAccent: "4",
-    price: "$250.90",
+    price: "6.273.000đ",
+    priceValue: 6_273_000,
     colors: ["#d6c4a8", "#c62828", "#c6e600", "#1a1a1a"],
     sizes: [6, 7, 8, 9],
     accent: "#ed3b6b",
@@ -101,7 +102,8 @@ export const shoes: ShoeProduct[] = [
     id: "air-max-1",
     name: "Nike Air Max",
     nameAccent: "1",
-    price: "$189.00",
+    price: "4.725.000đ",
+    priceValue: 4_725_000,
     colors: ["#ffffff", "#c8102e", "#1a1a1a", "#9e9e9e"],
     sizes: [6, 7, 8, 9],
     accent: "#c8102e",
@@ -114,7 +116,8 @@ export const shoes: ShoeProduct[] = [
     id: "air-max-impact",
     name: "Nike Air Max",
     nameAccent: "Impact",
-    price: "$220.50",
+    price: "5.513.000đ",
+    priceValue: 5_513_000,
     colors: ["#7ec8c0", "#ed3b6b", "#c6e600", "#1a3a5c"],
     sizes: [6, 7, 8, 9],
     accent: "#ed3b6b",
@@ -127,7 +130,8 @@ export const shoes: ShoeProduct[] = [
     id: "air-max-sc",
     name: "Nike Air Max",
     nameAccent: "SC",
-    price: "$165.00",
+    price: "4.125.000đ",
+    priceValue: 4_125_000,
     colors: ["#ffffff", "#c0c0c0", "#c6e600", "#8a8a8a"],
     sizes: [6, 7, 8, 9],
     accent: "#c6e600",
@@ -140,7 +144,8 @@ export const shoes: ShoeProduct[] = [
     id: "air-max-lite",
     name: "Nike Air Max",
     nameAccent: "Lite",
-    price: "$140.00",
+    price: "3.500.000đ",
+    priceValue: 3_500_000,
     colors: ["#ffffff", "#d0d0d0", "#b8b8b8", "#1a1a1a"],
     sizes: [6, 7, 8, 9],
     accent: "#ed3b6b",
@@ -154,7 +159,8 @@ export const shoes: ShoeProduct[] = [
     id: "quest-6",
     name: "Nike Quest",
     nameAccent: "6",
-    price: "$175.00",
+    price: "4.375.000đ",
+    priceValue: 4_375_000,
     colors: ["#1a1a1a", "#3b82f6", "#ed3b6b", "#ffffff"],
     sizes: [6, 7, 8, 9, 10],
     accent: "#3b82f6",
@@ -167,7 +173,8 @@ export const shoes: ShoeProduct[] = [
     id: "killshot-2",
     name: "Nike Killshot",
     nameAccent: "2",
-    price: "$110.00",
+    price: "2.750.000đ",
+    priceValue: 2_750_000,
     colors: ["#f5f0e8", "#1a1a1a", "#c8102e", "#2d61ff"],
     sizes: [6, 7, 8, 9],
     accent: "#c6e600",
@@ -180,7 +187,8 @@ export const shoes: ShoeProduct[] = [
     id: "quest-6-road",
     name: "Nike Quest",
     nameAccent: "Road",
-    price: "$159.00",
+    price: "3.975.000đ",
+    priceValue: 3_975_000,
     colors: ["#3b82f6", "#ffffff", "#1a1a1a", "#ed3b6b"],
     sizes: [7, 8, 9, 10],
     accent: "#38bdf8",
@@ -193,7 +201,8 @@ export const shoes: ShoeProduct[] = [
     id: "killshot-court",
     name: "Nike Killshot",
     nameAccent: "Court",
-    price: "$125.00",
+    price: "3.125.000đ",
+    priceValue: 3_125_000,
     colors: ["#ffffff", "#c8102e", "#1a1a1a", "#8b5cff"],
     sizes: [6, 7, 8, 9],
     accent: "#8b5cff",
@@ -217,11 +226,18 @@ export function getShoesByCategory(category: ShoeCategory | "all") {
 }
 
 export function parsePrice(price: string) {
-  const cleaned = price.replace(/[^\d.,]/g, "").replace(/\./g, "").replace(",", ".");
-  const asVnd = Number(price.replace(/[^\d]/g, ""));
-  if (price.includes("₫") || price.toLowerCase().includes("vnd") || asVnd >= 1000) {
-    return asVnd || 0;
+  const digits = Number(price.replace(/[^\d]/g, ""));
+  const normalized = price.toLowerCase();
+  if (
+    price.includes("₫") ||
+    price.includes("đ") ||
+    normalized.includes("vnd") ||
+    digits >= 1000
+  ) {
+    return digits || 0;
   }
+  // Legacy USD demo: "$189.00" → 189
+  const cleaned = price.replace(/[^\d.,]/g, "").replace(/,/g, "");
   return Number(cleaned) || 0;
 }
 

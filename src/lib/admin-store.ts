@@ -63,29 +63,29 @@ export function slugify(value: string) {
 /** Fake doanh thu theo tháng cho Highcharts */
 export const revenueSeries = {
   weekly: [
-    { name: "Mon", value: 4200 },
-    { name: "Tue", value: 5100 },
-    { name: "Wed", value: 4800 },
-    { name: "Thu", value: 6200 },
-    { name: "Fri", value: 7100 },
-    { name: "Sat", value: 8600 },
-    { name: "Sun", value: 7900 },
+    { name: "Mon", value: 105_000_000 },
+    { name: "Tue", value: 127_500_000 },
+    { name: "Wed", value: 120_000_000 },
+    { name: "Thu", value: 155_000_000 },
+    { name: "Fri", value: 177_500_000 },
+    { name: "Sat", value: 215_000_000 },
+    { name: "Sun", value: 197_500_000 },
   ],
   monthly: [
-    { name: "Jul", value: 18200 },
-    { name: "Aug", value: 20100 },
-    { name: "Sep", value: 19500 },
-    { name: "Oct", value: 22800 },
-    { name: "Nov", value: 31200 },
-    { name: "Dec", value: 48600 },
+    { name: "Jul", value: 455_000_000 },
+    { name: "Aug", value: 502_500_000 },
+    { name: "Sep", value: 487_500_000 },
+    { name: "Oct", value: 570_000_000 },
+    { name: "Nov", value: 780_000_000 },
+    { name: "Dec", value: 1_215_000_000 },
   ],
   yearly: [
-    { name: "2021", value: 186000 },
-    { name: "2022", value: 242000 },
-    { name: "2023", value: 298000 },
-    { name: "2024", value: 356000 },
-    { name: "2025", value: 412000 },
-    { name: "2026", value: 268000 },
+    { name: "2021", value: 4_650_000_000 },
+    { name: "2022", value: 6_050_000_000 },
+    { name: "2023", value: 7_450_000_000 },
+    { name: "2024", value: 8_900_000_000 },
+    { name: "2025", value: 10_300_000_000 },
+    { name: "2026", value: 6_700_000_000 },
   ],
 };
 
@@ -97,7 +97,7 @@ export const fakeOrders = [
     payment: "PayPal",
     customer: "Kiran Nguyen",
     status: "Delivered",
-    amount: 250.9,
+    amount: 6_273_000,
   },
   {
     id: "#25425",
@@ -106,7 +106,7 @@ export const fakeOrders = [
     payment: "Visa",
     customer: "Aisha Tran",
     status: "Canceled",
-    amount: 189,
+    amount: 4_725_000,
   },
   {
     id: "#25424",
@@ -115,7 +115,7 @@ export const fakeOrders = [
     payment: "Cash",
     customer: "Hugo Le",
     status: "Delivered",
-    amount: 175,
+    amount: 4_375_000,
   },
   {
     id: "#25423",
@@ -124,7 +124,7 @@ export const fakeOrders = [
     payment: "MoMo",
     customer: "Lina Pham",
     status: "Delivered",
-    amount: 110,
+    amount: 2_750_000,
   },
   {
     id: "#25422",
@@ -133,7 +133,7 @@ export const fakeOrders = [
     payment: "PayPal",
     customer: "Omar Vo",
     status: "Shipped",
-    amount: 165,
+    amount: 4_125_000,
   },
   {
     id: "#25421",
@@ -142,7 +142,7 @@ export const fakeOrders = [
     payment: "Visa",
     customer: "Bessie Cooper",
     status: "Delivered",
-    amount: 140,
+    amount: 3_500_000,
   },
   {
     id: "#25420",
@@ -151,7 +151,7 @@ export const fakeOrders = [
     payment: "Cash",
     customer: "Minh Do",
     status: "Processing",
-    amount: 159,
+    amount: 3_975_000,
   },
   {
     id: "#25419",
@@ -160,7 +160,7 @@ export const fakeOrders = [
     payment: "MoMo",
     customer: "An Bui",
     status: "Delivered",
-    amount: 125,
+    amount: 3_125_000,
   },
 ] as const;
 

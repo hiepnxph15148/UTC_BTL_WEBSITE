@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAdmin } from "@/context/AdminContext";
 import { useLocale } from "@/context/LocaleContext";
-import { LookupKind, storeApi, type LookupDto } from "@/lib/api";
+import { formatVnd, LookupKind, storeApi, type LookupDto } from "@/lib/api";
+import { parsePrice } from "@/data/shoes";
 import {
   PRODUCT_IMAGE_ACCEPT,
   validateProductImageFile,
@@ -21,9 +22,7 @@ const LOCAL_COLORS = [
 const LOCAL_SIZES = [38, 39, 40, 41, 42, 43];
 
 function parsePriceNumber(raw: string): number {
-  const cleaned = raw.replace(/[^\d.]/g, "");
-  const n = Number(cleaned);
-  return Number.isFinite(n) ? n : 0;
+  return parsePrice(raw.trim() || "0");
 }
 
 function toggleId(list: string[], id: string) {
@@ -193,12 +192,7 @@ export default function CreateProductPage() {
         await addProduct({
           name: name.trim(),
           nameAccent: nameAccent.trim() || "New",
-          price:
-            price.trim() === ""
-              ? "—"
-              : price.includes("₫")
-                ? price
-                : `${priceNum.toLocaleString("vi-VN")}₫`,
+          price: price.trim() === "" ? "—" : formatVnd(priceNum),
           category: cat?.label || category || "lifestyle",
           categoryId: category || undefined,
           accent: accent || cat?.accent || "#ed3b6b",
@@ -222,12 +216,7 @@ export default function CreateProductPage() {
         await addProduct({
           name: name.trim(),
           nameAccent: nameAccent.trim() || "New",
-          price:
-            price.trim() === ""
-              ? "—"
-              : price.startsWith("$") || price.includes("₫")
-                ? price
-                : `$${price}`,
+          price: price.trim() === "" ? "—" : formatVnd(priceNum),
           category: cat?.label || category || "lifestyle",
           categoryId: category || undefined,
           accent: accent || cat?.accent || "#ed3b6b",
@@ -296,7 +285,7 @@ export default function CreateProductPage() {
           </label>
           <label className="block space-y-1.5">
             <span className="text-xs font-semibold uppercase tracking-wide text-white/50">
-              {fromApi ? "Giá SKU (VND)" : "Giá (hiển thị)"}
+              {fromApi ? "Giá SKU (đ)" : "Giá (hiển thị)"}
             </span>
             <input
               value={price}

@@ -224,7 +224,7 @@ export default function AdminDiscountsPage() {
                 />
               </label>
               <label className="block text-xs text-white/50">
-                Giảm tối đa (VND)
+                Giảm tối đa (đ)
                 <input
                   required
                   value={form.maxDiscount}

@@ -48,11 +48,8 @@ export type CatalogLookups = {
 };
 
 export function formatVnd(amount: number) {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-    maximumFractionDigits: 0,
-  }).format(amount);
+  const n = Number.isFinite(amount) ? Math.round(amount) : 0;
+  return `${n.toLocaleString("vi-VN")}đ`;
 }
 
 export function parseSizeLabel(name: string | null | undefined): number {

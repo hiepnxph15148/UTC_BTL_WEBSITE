@@ -19,7 +19,7 @@ export default function OffersPage() {
     },
     {
       id: "bundle",
-      badge: "2 for $300",
+      badge: "2 đôi 7.500.000đ",
       title: t("offers.bundleTitle"),
       desc: t("offers.bundleDesc"),
       shoe: shoes[0],

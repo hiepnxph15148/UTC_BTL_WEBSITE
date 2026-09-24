@@ -456,7 +456,7 @@ export default function AdminProductDetailPage() {
             />
           </label>
           <label className="block text-xs text-white/50">
-            Giá (VND)
+            Giá (đ)
             <input
               required
               value={skuPrice}

@@ -11,13 +11,38 @@ import {
   storeApi,
   type OrderDto,
 } from "@/lib/api";
-import { displayOrderNumber, formatAddressRecipient } from "@/lib/format-display";
+import {
+  displayOrderNumber,
+  displayProductName,
+  formatAddressRecipient,
+} from "@/lib/format-display";
 import { orderStateKey } from "@/lib/status-labels";
+
+type MyOrderRow = OrderDto & {
+  productLabel: string;
+};
+
+function buildProductLabel(
+  items: { productName: string | null; skuCode: string | null }[] | null | undefined,
+  fallback: string,
+  moreLabel: (count: number) => string,
+) {
+  const names = [
+    ...new Set(
+      (items || [])
+        .map((line) => displayProductName(line.productName, line.skuCode))
+        .filter((name) => name && name !== "Sneaker"),
+    ),
+  ];
+  if (!names.length) return fallback;
+  if (names.length === 1) return names[0];
+  return `${names[0]} ${moreLabel(names.length - 1)}`;
+}
 
 export default function MyOrdersPage() {
   const { isAuthenticated, hydrated } = useAuth();
   const { t } = useLocale();
-  const [orders, setOrders] = useState<OrderDto[]>([]);
+  const [orders, setOrders] = useState<MyOrderRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -31,7 +56,26 @@ export default function MyOrdersPage() {
     setLoading(true);
     setError(null);
     try {
-      setOrders(await storeApi.getMyOrders({ take: 50 }));
+      const list = await storeApi.getMyOrders({ take: 50 });
+      const enriched = await Promise.all(
+        list.map(async (order) => {
+          const orderNo = displayOrderNumber(order.number, order.id);
+          try {
+            const detail = await storeApi.getMyOrder(order.id);
+            return {
+              ...order,
+              productLabel: buildProductLabel(
+                detail.items,
+                t("orders.fallbackName"),
+                (count) => t("orders.moreItems", { count }),
+              ),
+            };
+          } catch {
+            return { ...order, productLabel: orderNo };
+          }
+        }),
+      );
+      setOrders(enriched);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("orders.loadFail"));
     } finally {
@@ -112,11 +156,14 @@ export default function MyOrdersPage() {
               key={order.id}
               className="page-card flex flex-col gap-3 rounded-2xl p-5 sm:flex-row sm:items-center sm:justify-between"
             >
-              <div>
-                <p className="text-lg font-extrabold">
+              <div className="min-w-0">
+                <p className="truncate text-lg font-extrabold leading-snug">
+                  {order.productLabel}
+                </p>
+                <p className="mt-1 text-[11px] font-medium tracking-wide text-white/40">
                   {displayOrderNumber(order.number, order.id)}
                 </p>
-                <p className="mt-1 text-sm text-white/55">
+                <p className="mt-1.5 text-sm text-white/55">
                   {t(orderStateKey(order.state))} · COD · {formatVnd(order.total)}
                 </p>
                 <p className="mt-1 text-xs text-white/40">

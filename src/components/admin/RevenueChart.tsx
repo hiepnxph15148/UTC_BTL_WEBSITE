@@ -4,6 +4,7 @@ import Highcharts from "highcharts";
 import HighchartsReact from "highcharts-react-official";
 import { useMemo, useState } from "react";
 import { revenueSeries } from "@/lib/admin-store";
+import { formatVnd } from "@/lib/api";
 import { useLocale } from "@/context/LocaleContext";
 import type { MessageKey } from "@/i18n/messages";
 
@@ -56,16 +57,32 @@ export default function RevenueChart() {
         tickColor: "rgba(255,255,255,0.12)",
         labels: { style: { color: "rgba(255,255,255,0.55)" } },
       },
-      yAxis: {
-        title: { text: undefined },
-        gridLineColor: "rgba(255,255,255,0.08)",
-        labels: { style: { color: "rgba(255,255,255,0.55)" } },
-      },
       tooltip: {
         backgroundColor: "#1e1e28",
         borderColor: "rgba(255,255,255,0.12)",
         style: { color: "#fff" },
-        valuePrefix: "$",
+        formatter: function () {
+          const y = typeof this.y === "number" ? this.y : 0;
+          return `<span style="font-size:11px">${this.x}</span><br/><b>${formatVnd(y)}</b>`;
+        },
+      },
+      yAxis: {
+        title: { text: undefined },
+        gridLineColor: "rgba(255,255,255,0.08)",
+        labels: {
+          style: { color: "rgba(255,255,255,0.55)" },
+          formatter: function () {
+            const v = typeof this.value === "number" ? this.value : Number(this.value);
+            if (!Number.isFinite(v)) return "";
+            if (Math.abs(v) >= 1_000_000_000) {
+              return `${(v / 1_000_000_000).toLocaleString("vi-VN", { maximumFractionDigits: 1 })} tỷ`;
+            }
+            if (Math.abs(v) >= 1_000_000) {
+              return `${(v / 1_000_000).toLocaleString("vi-VN", { maximumFractionDigits: 0 })}tr`;
+            }
+            return formatVnd(v);
+          },
+        },
       },
       plotOptions: {
         areaspline: {

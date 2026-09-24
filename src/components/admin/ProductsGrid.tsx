@@ -13,6 +13,7 @@ import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { AdminProduct } from "@/lib/admin-store";
 import { parsePrice } from "@/data/shoes";
+import { formatVnd } from "@/lib/api";
 import { useLocale } from "@/context/LocaleContext";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -86,7 +87,7 @@ export default function ProductsGrid({ products, height = 420 }: Props) {
         minWidth: 100,
         valueGetter: (p) => parsePrice(p.data?.price ?? "0"),
         valueFormatter: (p) =>
-          typeof p.value === "number" ? `$${p.value.toFixed(2)}` : "",
+          typeof p.value === "number" ? formatVnd(p.value) : "",
         sortable: true,
       },
       {
