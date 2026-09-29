@@ -281,24 +281,6 @@ export type ChangePasswordInput = {
   newPassword: string;
 };
 
-export type SendPasswordResetCodeDto = {
-  email: string;
-  appName: string;
-  returnUrl?: string | null;
-  returnUrlHash?: string | null;
-};
-
-export type VerifyPasswordResetTokenInput = {
-  userId: string;
-  resetToken: string;
-};
-
-export type ResetPasswordDto = {
-  userId: string;
-  resetToken: string;
-  password: string;
-};
-
 export type DiscountDto = {
   id: string;
   code: string | null;

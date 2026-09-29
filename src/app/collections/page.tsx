@@ -3,16 +3,27 @@
 import Link from "next/link";
 import PageShell from "@/components/PageShell";
 import ShoeCard from "@/components/ShoeCard";
-import { categorySections, type ShoeCategory } from "@/data/shoes";
-import { useCatalogProducts } from "@/hooks/useCatalogProducts";
+import {
+  buildCollectionSections,
+  useCatalogProducts,
+} from "@/hooks/useCatalogProducts";
 import { useLocale } from "@/context/LocaleContext";
-import { categoryBlurbKey, categoryLabelKey } from "@/i18n/messages";
+import { categoryLabelKey } from "@/i18n/messages";
 
 const PREVIEW = 3;
 
 export default function CollectionsPage() {
-  const { shoes, loading } = useCatalogProducts({ take: 100 });
+  const { shoes, lookups, loading, fromApi } = useCatalogProducts({
+    allPages: true,
+  });
   const { t } = useLocale();
+  const sections = buildCollectionSections(lookups, shoes);
+
+  const labelFor = (section: { id: string; label: string }) => {
+    if (fromApi) return section.label;
+    const key = categoryLabelKey(section.id);
+    return key === "cat.all" ? section.label : t(key);
+  };
 
   return (
     <PageShell
@@ -24,29 +35,37 @@ export default function CollectionsPage() {
         <p className="mb-6 text-sm text-white/50">{t("common.loading")}</p>
       ) : null}
 
+      {!loading && !sections.length ? (
+        <div className="page-card rounded-2xl p-8 text-center text-sm text-white/60">
+          {t("home.empty")}
+        </div>
+      ) : null}
+
       <nav className="mb-10 flex flex-wrap gap-2.5">
-        {categorySections.map((cat) => (
+        {sections.map((cat) => (
           <a
-            key={cat.id}
+            key={cat.categoryId || cat.id}
             href={`#${cat.id}`}
             className="rounded-full border border-white/15 bg-white/[0.04] px-4 py-2 text-sm font-semibold text-white/75 transition-colors hover:border-white/35 hover:text-white"
             style={{ boxShadow: `inset 0 -2px 0 ${cat.accent}66` }}
           >
-            {t(categoryLabelKey(cat.id))}
+            {labelFor(cat)}
           </a>
         ))}
       </nav>
 
       <div className="space-y-14">
-        {categorySections.map((cat) => {
-          const all = shoes.filter(
-            (shoe) => shoe.category === (cat.id as ShoeCategory),
+        {sections.map((cat) => {
+          const all = shoes.filter((shoe) =>
+            cat.categoryId
+              ? shoe.categoryId === cat.categoryId
+              : shoe.category === cat.id,
           );
           const preview = all.slice(0, PREVIEW);
           const hasMore = all.length > PREVIEW;
 
           return (
-            <section key={cat.id} id={cat.id} className="scroll-mt-24">
+            <section key={cat.categoryId || cat.id} id={cat.id} className="scroll-mt-24">
               <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <div className="mb-2 flex items-center gap-3">
@@ -55,12 +74,10 @@ export default function CollectionsPage() {
                       style={{ background: cat.accent }}
                     />
                     <h2 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">
-                      {t(categoryLabelKey(cat.id))}
+                      {labelFor(cat)}
                     </h2>
                   </div>
                   <p className="text-sm text-white/60">
-                    {t(categoryBlurbKey(cat.id))}
-                    {" · "}
                     {t("collections.count", { count: all.length })}
                   </p>
                 </div>
@@ -82,6 +99,10 @@ export default function CollectionsPage() {
                   <ShoeCard key={shoe.id} shoe={shoe} index={index} />
                 ))}
               </div>
+
+              {!all.length ? (
+                <p className="text-sm text-white/45">{t("home.empty")}</p>
+              ) : null}
 
               {hasMore ? (
                 <p className="mt-4 text-center text-sm text-white/50 sm:text-left">

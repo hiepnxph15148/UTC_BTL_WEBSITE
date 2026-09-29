@@ -6,6 +6,8 @@ import { useAdmin } from "@/context/AdminContext";
 import { useAuth } from "@/context/AuthContext";
 import { useLocale } from "@/context/LocaleContext";
 
+const PAGE_SIZE_OPTIONS = [20, 50, 100] as const;
+
 export default function AdminInventoryPage() {
   const { fromApi, error: adminError } = useAdmin();
   const { isAuthenticated } = useAuth();
@@ -13,7 +15,11 @@ export default function AdminInventoryPage() {
   const [items, setItems] = useState<InventoryDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(50);
+  const [hasMore, setHasMore] = useState(false);
   const [selectedSku, setSelectedSku] = useState<string | null>(null);
   const [movements, setMovements] = useState<MovementDto[]>([]);
   const [delta, setDelta] = useState("10");
@@ -23,28 +29,50 @@ export default function AdminInventoryPage() {
   const load = useCallback(async () => {
     if (!isAuthenticated) {
       setItems([]);
+      setHasMore(false);
       setLoading(false);
       return;
     }
     setLoading(true);
     setError(null);
     try {
+      const skip = page * pageSize;
       const data = await storeApi.getInventory({
-        take: 100,
+        skip,
+        take: pageSize,
         search: search.trim() || undefined,
       });
       setItems(data);
+      setHasMore(data.length === pageSize);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không tải được tồn kho");
       setItems([]);
+      setHasMore(false);
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, search]);
+  }, [isAuthenticated, search, page, pageSize]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (
+      selectedSku &&
+      items.length &&
+      !items.some((row) => row.skuId === selectedSku)
+    ) {
+      setSelectedSku(null);
+      setMovements([]);
+    }
+  }, [items, selectedSku]);
+
+  const applySearch = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    setPage(0);
+    setSearch(searchInput.trim());
+  };
 
   const openMovements = async (skuId: string) => {
     setSelectedSku(skuId);
@@ -81,6 +109,9 @@ export default function AdminInventoryPage() {
     }
   };
 
+  const from = items.length ? page * pageSize + 1 : 0;
+  const to = page * pageSize + items.length;
+
   return (
     <div className="space-y-6">
       <div>
@@ -100,16 +131,44 @@ export default function AdminInventoryPage() {
       ) : (
         <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
           <div className="admin-card p-5">
-            <div className="mb-4 flex flex-wrap items-end gap-3">
+            <form
+              onSubmit={applySearch}
+              className="mb-4 flex flex-wrap items-end gap-3"
+            >
               <label className="min-w-[200px] flex-1 text-xs text-white/50">
                 Tìm mã SKU
                 <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
                   className="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm text-white outline-none"
                   placeholder="CLASSIC-WHITE…"
                 />
               </label>
+              <label className="text-xs text-white/50">
+                Mỗi trang
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPage(0);
+                    setPageSize(
+                      Number(e.target.value) as (typeof PAGE_SIZE_OPTIONS)[number],
+                    );
+                  }}
+                  className="mt-1 block rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm text-white outline-none"
+                >
+                  {PAGE_SIZE_OPTIONS.map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="submit"
+                className="rounded-xl bg-white/10 px-3 py-2 text-xs font-bold hover:bg-white/15"
+              >
+                Tìm
+              </button>
               <button
                 type="button"
                 onClick={() => void load()}
@@ -117,71 +176,107 @@ export default function AdminInventoryPage() {
               >
                 Làm mới
               </button>
-            </div>
+            </form>
 
             {loading ? (
               <p className="py-10 text-center text-sm text-white/45">
                 {t("common.loading")}
               </p>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[520px] text-left text-sm">
-                  <thead className="text-xs uppercase tracking-wide text-white/40">
-                    <tr>
-                      <th className="pb-3 pr-3 font-semibold">SKU</th>
-                      <th className="pb-3 pr-3 font-semibold">
-                        {t("admin.invOnHand")}
-                      </th>
-                      <th className="pb-3 pr-3 font-semibold">
-                        {t("admin.invReserved")}
-                      </th>
-                      <th className="pb-3 pr-3 font-semibold">
-                        {t("admin.invAvailable")}
-                      </th>
-                      <th className="pb-3 font-semibold" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {items.map((row) => (
-                      <tr
-                        key={row.skuId}
-                        className={`border-t border-white/8 ${
-                          selectedSku === row.skuId ? "bg-[#ed3b6b]/10" : ""
-                        }`}
-                      >
-                        <td className="py-3 pr-3 font-semibold">
-                          {row.code || row.skuId.slice(0, 8)}
-                        </td>
-                        <td className="py-3 pr-3 text-white/70">{row.onHand}</td>
-                        <td className="py-3 pr-3 text-white/70">{row.reserved}</td>
-                        <td
-                          className={`py-3 pr-3 font-bold ${
-                            row.available <= 5 ? "text-amber-300" : "text-white"
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[520px] text-left text-sm">
+                    <thead className="text-xs uppercase tracking-wide text-white/40">
+                      <tr>
+                        <th className="pb-3 pr-3 font-semibold">SKU</th>
+                        <th className="pb-3 pr-3 font-semibold">
+                          {t("admin.invOnHand")}
+                        </th>
+                        <th className="pb-3 pr-3 font-semibold">
+                          {t("admin.invReserved")}
+                        </th>
+                        <th className="pb-3 pr-3 font-semibold">
+                          {t("admin.invAvailable")}
+                        </th>
+                        <th className="pb-3 font-semibold" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {items.map((row) => (
+                        <tr
+                          key={row.skuId}
+                          className={`border-t border-white/8 ${
+                            selectedSku === row.skuId ? "bg-[#ed3b6b]/10" : ""
                           }`}
                         >
-                          {row.available}
-                        </td>
-                        <td className="py-3 text-right">
-                          <button
-                            type="button"
-                            onClick={() => void openMovements(row.skuId)}
-                            className="rounded-lg border border-white/15 px-2.5 py-1 text-xs font-semibold text-white/70 hover:bg-white/5"
+                          <td className="py-3 pr-3 font-semibold">
+                            {row.code || row.skuId.slice(0, 8)}
+                          </td>
+                          <td className="py-3 pr-3 text-white/70">{row.onHand}</td>
+                          <td className="py-3 pr-3 text-white/70">
+                            {row.reserved}
+                          </td>
+                          <td
+                            className={`py-3 pr-3 font-bold ${
+                              row.available <= 5
+                                ? "text-amber-300"
+                                : "text-white"
+                            }`}
                           >
-                            Chi tiết
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {!items.length ? (
-                      <tr>
-                        <td colSpan={5} className="py-8 text-center text-white/45">
-                          Không có SKU trong kho
-                        </td>
-                      </tr>
-                    ) : null}
-                  </tbody>
-                </table>
-              </div>
+                            {row.available}
+                          </td>
+                          <td className="py-3 text-right">
+                            <button
+                              type="button"
+                              onClick={() => void openMovements(row.skuId)}
+                              className="rounded-lg border border-white/15 px-2.5 py-1 text-xs font-semibold text-white/70 hover:bg-white/5"
+                            >
+                              Chi tiết
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {!items.length ? (
+                        <tr>
+                          <td
+                            colSpan={5}
+                            className="py-8 text-center text-white/45"
+                          >
+                            Không có SKU trong kho
+                          </td>
+                        </tr>
+                      ) : null}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-white/55">
+                  <p>
+                    {items.length
+                      ? `Hiển thị ${from}–${to} · trang ${page + 1}`
+                      : "Không có dữ liệu"}
+                    {hasMore ? " · còn trang sau" : ""}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={page <= 0 || loading}
+                      onClick={() => setPage((p) => Math.max(0, p - 1))}
+                      className="rounded-lg border border-white/15 px-3 py-1.5 font-semibold hover:bg-white/5 disabled:opacity-40"
+                    >
+                      Trước
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!hasMore || loading}
+                      onClick={() => setPage((p) => p + 1)}
+                      className="rounded-lg border border-white/15 px-3 py-1.5 font-semibold hover:bg-white/5 disabled:opacity-40"
+                    >
+                      Sau
+                    </button>
+                  </div>
+                </div>
+              </>
             )}
           </div>
 
@@ -250,7 +345,9 @@ export default function AdminInventoryPage() {
               </>
             ) : (
               <p className="text-sm text-white/50">
-                Chọn SKU bên trái để nhập hàng hoặc xem lịch sử tồn.
+                Chọn SKU bên trái để nhập hàng hoặc xem lịch sử tồn. Dùng tìm
+                mã SKU hoặc sang trang sau nếu sản phẩm mới không nằm trang đầu
+                (kho có nhiều SKU demo).
               </p>
             )}
           </div>

@@ -56,14 +56,17 @@ export default function AdminProductDetailPage() {
     setLoading(true);
     setError(null);
     try {
-      const [adminProducts, lookups, adminSkus] = await Promise.all([
-        storeApi.getAdminProducts({ take: 200 }),
-        storeApi.getLookups(),
-        storeApi.getAdminSkus(productId),
-      ]);
-      const found =
-        adminProducts.find((p) => p.id === productId) ||
-        (await storeApi.getProduct(productId).catch(() => null));
+      // Tải sản phẩm trước — không để lỗi SKU/lookup làm mất cả trang chi tiết.
+      let found: ProductDto | null = null;
+      try {
+        const adminProducts = await storeApi.getAdminProducts({ take: 200 });
+        found = adminProducts.find((p) => p.id === productId) || null;
+      } catch {
+        // fallback bên dưới
+      }
+      if (!found) {
+        found = await storeApi.getProduct(productId).catch(() => null);
+      }
       if (!found) throw new Error("Không tìm thấy sản phẩm");
 
       setProduct(found);
@@ -75,18 +78,27 @@ export default function AdminProductDetailPage() {
       setPublished(found.published);
       setImageUrlInput(found.imageUrl || "");
 
-      setCategories(lookups.filter((l) => l.kind === LookupKind.Category));
-      setBrands(lookups.filter((l) => l.kind === LookupKind.Brand));
-      const colorList = lookups.filter(
-        (l) => Number(l.kind) === LookupKind.Color && l.active,
+      const [categoryList, brandList, colorList, sizeList, adminSkus] =
+        await Promise.all([
+          storeApi.getLookups(LookupKind.Category).catch(() => [] as LookupDto[]),
+          storeApi.getLookups(LookupKind.Brand).catch(() => [] as LookupDto[]),
+          storeApi.getLookups(LookupKind.Color).catch(() => [] as LookupDto[]),
+          storeApi.getLookups(LookupKind.Size).catch(() => [] as LookupDto[]),
+          storeApi.getAdminSkus(productId).catch(() => [] as SkuDto[]),
+        ]);
+
+      setCategories(categoryList.filter((l) => l.active !== false));
+      setBrands(brandList.filter((l) => l.active !== false));
+      const colorsActive = colorList.filter(
+        (l) => Number(l.kind) === LookupKind.Color && l.active !== false,
       );
-      const sizeList = lookups.filter(
-        (l) => Number(l.kind) === LookupKind.Size && l.active,
+      const sizesActive = sizeList.filter(
+        (l) => Number(l.kind) === LookupKind.Size && l.active !== false,
       );
-      setColors(colorList);
-      setSizes(sizeList);
-      setSkuColorId(colorList[0]?.id || "");
-      setSkuSizeId(sizeList[0]?.id || "");
+      setColors(colorsActive);
+      setSizes(sizesActive);
+      setSkuColorId(colorsActive[0]?.id || "");
+      setSkuSizeId(sizesActive[0]?.id || "");
       setSkus(adminSkus);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không tải được sản phẩm");

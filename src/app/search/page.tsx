@@ -14,7 +14,7 @@ function SearchResults() {
   const { t } = useLocale();
   const { shoes, loading } = useCatalogProducts({
     search: q || undefined,
-    take: 100,
+    allPages: true,
   });
 
   return (

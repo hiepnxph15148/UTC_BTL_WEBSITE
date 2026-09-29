@@ -37,7 +37,38 @@ const CATEGORY_MAP: Record<string, ShoeCategory> = {
   "bóng rổ": "basketball",
   skate: "training",
   "giày skate": "training",
+  "giay da": "lifestyle",
+  "giày da": "lifestyle",
 };
+
+/** Chuẩn hóa để so khớp tìm kiếm: không dấu, không phân biệt hoa thường. */
+export function normalizeSearchText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+export function productMatchesSearch(shoe: ShoeProduct, query: string) {
+  const q = normalizeSearchText(query);
+  if (!q) return true;
+  const hay = normalizeSearchText(
+    [
+      shoe.name,
+      shoe.nameAccent,
+      shoe.slug,
+      shoe.description,
+      shoe.category,
+      ...(shoe.skus?.map((s) => s.code || "") ?? []),
+    ]
+      .filter(Boolean)
+      .join(" "),
+  );
+  if (hay.includes(q)) return true;
+  const tokens = q.split(/\s+/).filter(Boolean);
+  return tokens.length > 0 && tokens.every((token) => hay.includes(token));
+}
 
 export type CatalogLookups = {
   categories: LookupDto[];
@@ -234,7 +265,7 @@ export function findSku(
 
 /**
  * Demo shoes (impact-4, …) không có SKU — gắn lại từ catalog API khi có thể.
- * Trả null nếu kho không có biến thể mua được.
+ * Trả null nếu kho không có SKU mua được.
  */
 export async function ensurePurchasableShoe(
   shoe: ShoeProduct,
@@ -296,14 +327,37 @@ export async function fetchCatalogProducts(options?: {
   brandId?: string;
   search?: string;
   take?: number;
+  /** Lấy hết trang (Take API tối đa 100). */
+  allPages?: boolean;
 }): Promise<{ shoes: ShoeProduct[]; lookups: CatalogLookups }> {
   const lookups = await loadCatalogLookups();
-  const products = await storeApi.getProducts({
-    take: options?.take ?? 100,
-    categoryId: options?.categoryId,
-    brandId: options?.brandId,
-    search: options?.search,
-  });
+  const pageSize = Math.min(Math.max(options?.take ?? 100, 1), 100);
+  const products: ProductDto[] = [];
+
+  if (options?.allPages) {
+    let skip = 0;
+    for (;;) {
+      const batch = await storeApi.getProducts({
+        skip,
+        take: 100,
+        categoryId: options?.categoryId,
+        brandId: options?.brandId,
+        // Không gửi Search lên API — lọc client không phân biệt hoa/thường, có dấu.
+        search: undefined,
+      });
+      products.push(...batch);
+      if (batch.length < 100) break;
+      skip += 100;
+    }
+  } else {
+    const batch = await storeApi.getProducts({
+      take: pageSize,
+      categoryId: options?.categoryId,
+      brandId: options?.brandId,
+      search: options?.search,
+    });
+    products.push(...batch);
+  }
 
   const shoes = await Promise.all(
     products.map(async (product, index) => {
@@ -316,7 +370,11 @@ export async function fetchCatalogProducts(options?: {
     }),
   );
 
-  return { shoes, lookups };
+  const filtered = options?.search?.trim()
+    ? shoes.filter((shoe) => productMatchesSearch(shoe, options.search!))
+    : shoes;
+
+  return { shoes: filtered, lookups };
 }
 
 export async function fetchCatalogProduct(

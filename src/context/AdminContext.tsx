@@ -142,26 +142,45 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       );
 
       setApiProducts(
-        products.map((p, index) => {
-          const { name, nameAccent } = splitName(p.name || "Product");
-          return {
-            id: p.id,
-            name,
-            nameAccent,
-            price: "—",
-            category: categoryNameById.get(p.categoryId) || "—",
-            accent: accents[index % accents.length],
-            hero:
-              mediaUrl(p.imageUrl) ||
-              encodeURI(`/item/image ${(index % 15) + 1}.png`),
-            colors: ["#ffffff", "#1a1a1a"],
-            sizes: [38, 39, 40, 41, 42],
-            stock: p.published ? 10 : 0,
-            sales: 0,
-            createdAt: new Date().toISOString().slice(0, 10),
-            source: "custom" as const,
-          };
-        }),
+        await Promise.all(
+          products.map(async (p, index) => {
+            const { name, nameAccent } = splitName(p.name || "Product");
+            let priceLabel = "—";
+            let stock = 0;
+            try {
+              const skus = await storeApi.getAdminSkus(p.id);
+              const prices = skus
+                .map((s) => s.price)
+                .filter((n) => Number.isFinite(n) && n > 0);
+              if (prices.length) {
+                priceLabel = formatVnd(Math.min(...prices));
+              }
+              stock = skus.reduce(
+                (sum, s) => sum + (Number.isFinite(s.available) ? s.available : 0),
+                0,
+              );
+            } catch {
+              // Giữ giá/tồn mặc định nếu không tải được SKU
+            }
+            return {
+              id: p.id,
+              name,
+              nameAccent,
+              price: priceLabel,
+              category: categoryNameById.get(p.categoryId) || "—",
+              accent: accents[index % accents.length],
+              hero:
+                mediaUrl(p.imageUrl) ||
+                encodeURI(`/item/image ${(index % 15) + 1}.png`),
+              colors: ["#ffffff", "#1a1a1a"],
+              sizes: [38, 39, 40, 41, 42],
+              stock,
+              sales: 0,
+              createdAt: new Date().toISOString().slice(0, 10),
+              source: "custom" as const,
+            };
+          }),
+        ),
       );
       setOrders(adminOrders);
       setReport(reportDto);
@@ -206,33 +225,48 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const addProduct = useCallback(
     async (input: AddProductInput) => {
       if (isAuthenticated) {
-        const lookups = await storeApi.getLookups();
+        const [categories, brands, colorLookups, sizeLookups] =
+          await Promise.all([
+            storeApi.getLookups(LookupKind.Category),
+            storeApi.getLookups(LookupKind.Brand),
+            storeApi.getLookups(LookupKind.Color),
+            storeApi.getLookups(LookupKind.Size),
+          ]);
+
         const categoryId = input.categoryId || input.category;
         const category =
-          lookups.find(
+          categories.find(
             (l) =>
-              Number(l.kind) === LookupKind.Category &&
-              (l.id === categoryId ||
-                (l.name || "").toLowerCase() ===
-                  (input.category || "").toLowerCase() ||
-                (l.name || "")
-                  .toLowerCase()
-                  .includes((input.category || "").toLowerCase())),
-          ) ||
-          lookups.find((l) => Number(l.kind) === LookupKind.Category);
-        const brand = lookups.find(
-          (l) => Number(l.kind) === LookupKind.Brand && l.active !== false,
-        );
-        if (!category || !brand) {
+              l.id === categoryId ||
+              (l.name || "").toLowerCase() ===
+                (input.category || "").toLowerCase() ||
+              (l.name || "")
+                .toLowerCase()
+                .includes((input.category || "").toLowerCase()),
+          ) || categories.find((l) => l.active !== false);
+
+        let brand =
+          brands.find((l) => l.active !== false) || brands[0] || null;
+        if (!brand) {
+          brand = await storeApi.createLookup({
+            kind: LookupKind.Brand,
+            name: "Nike",
+            active: true,
+          });
+        }
+
+        if (!category) {
           throw new Error(
-            "Thiếu danh mục hoặc thương hiệu trên API. Hãy tạo lookup trước.",
+            "Thiếu danh mục trên API. Hãy tạo danh mục ở trang Danh mục trước.",
           );
         }
 
         const colorIds = (input.colorIds || []).filter(Boolean);
         const sizeIds = (input.sizeIds || []).filter(Boolean);
         if (!colorIds.length || !sizeIds.length) {
-          throw new Error("Chọn ít nhất một màu và một size để tạo SKU.");
+          throw new Error(
+            "Chọn ít nhất một màu và một size để tạo SKU.",
+          );
         }
 
         const created = await storeApi.createProduct({
@@ -252,10 +286,16 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
           await storeApi.uploadProductImage(created.id, input.imageFile);
         }
 
+        const allLookups = [
+          ...categories,
+          ...brands,
+          ...colorLookups,
+          ...sizeLookups,
+        ];
         const colorName = (id: string) =>
-          lookups.find((l) => l.id === id)?.name || id.slice(0, 4);
+          allLookups.find((l) => l.id === id)?.name || id.slice(0, 4);
         const sizeName = (id: string) =>
-          lookups.find((l) => l.id === id)?.name || id.slice(0, 4);
+          allLookups.find((l) => l.id === id)?.name || id.slice(0, 4);
         const unitPrice =
           typeof input.unitPrice === "number" && input.unitPrice > 0
             ? Math.round(input.unitPrice)
@@ -272,7 +312,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
             const sku = await storeApi.createSku(created.id, {
               colorId,
               sizeId,
-              code: code || `SKU-${Date.now().toString(36)}`,
+              code: code || `MAU-${Date.now().toString(36)}`,
               price: unitPrice,
               active: true,
             });

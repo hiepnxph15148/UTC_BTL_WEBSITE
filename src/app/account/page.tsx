@@ -8,11 +8,8 @@ import { useLocale } from "@/context/LocaleContext";
 import {
   changePassword,
   getMyProfile,
-  resetPassword,
-  sendPasswordResetCode,
   storeApi,
   updateMyProfile,
-  verifyPasswordResetToken,
   type AddressDto,
   type ProfileDto,
 } from "@/lib/api";
@@ -23,7 +20,6 @@ import {
   confirmPasswordError,
   emailError,
   formatIssue,
-  isNonEmpty,
   passwordError,
   phoneError,
   recipientError,
@@ -48,12 +44,6 @@ export default function AccountPage() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
-
-  const [resetEmail, setResetEmail] = useState("");
-  const [resetUserId, setResetUserId] = useState("");
-  const [resetToken, setResetToken] = useState("");
-  const [resetPasswordValue, setResetPasswordValue] = useState("");
-  const [tokenOk, setTokenOk] = useState<boolean | null>(null);
 
   const [addrForm, setAddrForm] = useState({
     recipient: "",
@@ -163,91 +153,6 @@ export default function AccountPage() {
       setMessage(t("account.passChanged"));
     } catch (err) {
       setError(err instanceof Error ? err.message : t("account.passFail"));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const requestReset = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (busy) return;
-    setError(null);
-    setMessage(null);
-
-    const mailMsg = formatIssue(t, emailError(resetEmail));
-    if (mailMsg) {
-      setError(mailMsg);
-      return;
-    }
-
-    setBusy(true);
-    try {
-      await sendPasswordResetCode({
-        email: resetEmail.trim(),
-        appName: "MVC",
-      });
-      setMessage(t("account.resetSent"));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t("account.resetSendFail"));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const verifyToken = async () => {
-    if (busy) return;
-    setError(null);
-    if (!isNonEmpty(resetUserId) || !isNonEmpty(resetToken)) {
-      setError(t("validation.resetFieldsRequired"));
-      return;
-    }
-    setBusy(true);
-    try {
-      const ok = await verifyPasswordResetToken({
-        userId: resetUserId.trim(),
-        resetToken: resetToken.trim(),
-      });
-      setTokenOk(ok);
-      setMessage(ok ? t("account.tokenOk") : t("account.tokenBad"));
-    } catch (err) {
-      setTokenOk(false);
-      setError(err instanceof Error ? err.message : t("account.verifyFail"));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const doResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (busy) return;
-    setError(null);
-    setMessage(null);
-
-    if (!isNonEmpty(resetUserId)) {
-      setError(t("validation.userIdRequired"));
-      return;
-    }
-    if (!isNonEmpty(resetToken)) {
-      setError(t("validation.tokenRequired"));
-      return;
-    }
-    const pwdMsg = formatIssue(t, passwordError(resetPasswordValue));
-    if (pwdMsg) {
-      setError(pwdMsg);
-      return;
-    }
-
-    setBusy(true);
-    try {
-      await resetPassword({
-        userId: resetUserId.trim(),
-        resetToken: resetToken.trim(),
-        password: resetPasswordValue,
-      });
-      setMessage(t("account.resetOk"));
-      setResetPasswordValue("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t("account.resetFail"));
     } finally {
       setBusy(false);
     }
@@ -458,69 +363,6 @@ export default function AccountPage() {
             {t("account.changePass")}
           </button>
         </form>
-
-        <div className="page-card space-y-3 rounded-2xl p-5 lg:col-span-2">
-          <h2 className="text-lg font-bold">{t("account.recover")}</h2>
-          <form onSubmit={requestReset} className="flex flex-wrap gap-2" noValidate>
-            <input
-              required
-              type="email"
-              value={resetEmail}
-              onChange={(e) => setResetEmail(e.target.value)}
-              placeholder={t("account.resetEmailPh")}
-              className="min-w-[200px] flex-1 rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm outline-none"
-            />
-            <button
-              type="submit"
-              disabled={busy}
-              className="rounded-xl border border-white/15 px-4 py-2 text-sm font-semibold disabled:opacity-50"
-            >
-              {t("account.sendCode")}
-            </button>
-          </form>
-          <form onSubmit={doResetPassword} className="grid gap-2 sm:grid-cols-2" noValidate>
-            <input
-              required
-              value={resetUserId}
-              onChange={(e) => setResetUserId(e.target.value)}
-              placeholder={t("account.userId")}
-              className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm outline-none"
-            />
-            <input
-              required
-              value={resetToken}
-              onChange={(e) => setResetToken(e.target.value)}
-              placeholder={t("account.resetToken")}
-              className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm outline-none"
-            />
-            <input
-              required
-              type="password"
-              minLength={PASSWORD_MIN_LENGTH}
-              value={resetPasswordValue}
-              onChange={(e) => setResetPasswordValue(e.target.value)}
-              placeholder={t("account.newPass")}
-              className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm outline-none"
-            />
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void verifyToken()}
-                className="rounded-xl border border-white/15 px-3 py-2 text-xs font-semibold"
-              >
-                {t("account.verifyToken")} {tokenOk === null ? "" : tokenOk ? "✓" : "✗"}
-              </button>
-              <button
-                type="submit"
-                disabled={busy}
-                className="rounded-xl bg-nike-accent px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
-              >
-                {t("account.resetPass")}
-              </button>
-            </div>
-          </form>
-        </div>
 
         <div className="page-card space-y-3 rounded-2xl p-5 lg:col-span-2">
           <h2 className="text-lg font-bold">{t("account.addresses")}</h2>

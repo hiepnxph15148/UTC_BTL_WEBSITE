@@ -100,7 +100,7 @@ export function humanizeStoreError(raw: string | null | undefined): string {
   // Bỏ jargon SKU còn sót lại trong câu
   if (/\bsku\b/i.test(msg)) {
     return msg
-      .replace(/\bSKU\b/gi, "mẫu sản phẩm")
+      .replace(/\bSKU\b/gi, "SKU")
       .replace(/\buuid\b/gi, "mã")
       .trim();
   }

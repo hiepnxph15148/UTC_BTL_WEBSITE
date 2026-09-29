@@ -45,13 +45,25 @@ function ProductCell(props: ICellRendererParams<AdminProduct>) {
         alt=""
         className="h-9 w-12 rounded object-contain bg-black/30"
       />
-      <Link
-        href={`/admin/products/${p.id}`}
-        className="truncate font-semibold text-white hover:text-[#ed3b6b]"
-      >
+      <span className="truncate font-semibold text-white">
         {p.name} {p.nameAccent}
-      </Link>
+      </span>
     </div>
+  );
+}
+
+function ActionsCell(props: ICellRendererParams<AdminProduct>) {
+  const p = props.data;
+  const { t } = useLocale();
+  if (!p) return null;
+  return (
+    <Link
+      href={`/admin/products/${p.id}`}
+      className="inline-flex rounded-lg border border-white/15 px-2.5 py-1 text-xs font-bold text-white/80 hover:bg-white/5 hover:text-white"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {t("common.view")}
+    </Link>
   );
 }
 
@@ -85,9 +97,16 @@ export default function ProductsGrid({ products, height = 420 }: Props) {
         field: "price",
         flex: 1,
         minWidth: 100,
-        valueGetter: (p) => parsePrice(p.data?.price ?? "0"),
+        valueGetter: (p) => {
+          const raw = p.data?.price?.trim() || "";
+          if (!raw || raw === "—" || raw === "-") return null;
+          const n = parsePrice(raw);
+          return n > 0 ? n : null;
+        },
         valueFormatter: (p) =>
-          typeof p.value === "number" ? formatVnd(p.value) : "",
+          typeof p.value === "number" && p.value > 0
+            ? formatVnd(p.value)
+            : "—",
         sortable: true,
       },
       {
@@ -128,6 +147,15 @@ export default function ProductsGrid({ products, height = 420 }: Props) {
         field: "createdAt",
         flex: 1,
         minWidth: 120,
+      },
+      {
+        headerName: "",
+        colId: "actions",
+        width: 100,
+        maxWidth: 110,
+        sortable: false,
+        filter: false,
+        cellRenderer: ActionsCell,
       },
     ],
     [t],
