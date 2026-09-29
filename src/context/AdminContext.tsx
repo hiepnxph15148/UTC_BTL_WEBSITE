@@ -23,10 +23,11 @@ import {
   mediaUrl,
   splitName,
   storeApi,
+  type OrderDetailDto,
   type OrderDto,
   type ReportDto,
 } from "@/lib/api";
-import { LookupKind } from "@/lib/api/types";
+import { LookupKind, OrderState } from "@/lib/api/types";
 import { useAuth } from "@/context/AuthContext";
 
 export type AddProductInput = Omit<
@@ -53,6 +54,8 @@ type AdminContextValue = {
   products: AdminProduct[];
   categories: AdminCategory[];
   orders: OrderDto[];
+  /** Chi tiết đơn đã preload (id → detail) để dashboard/đơn gần đây. */
+  orderDetails: Record<string, OrderDetailDto>;
   report: ReportDto | null;
   addProduct: (input: AddProductInput) => Promise<void>;
   addCategory: (input: Omit<AdminCategory, "id"> & { id?: string }) => void;
@@ -99,6 +102,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [apiProducts, setApiProducts] = useState<AdminProduct[]>([]);
   const [apiCategories, setApiCategories] = useState<AdminCategory[]>([]);
   const [orders, setOrders] = useState<OrderDto[]>([]);
+  const [orderDetails, setOrderDetails] = useState<
+    Record<string, OrderDetailDto>
+  >({});
   const [report, setReport] = useState<ReportDto | null>(null);
 
   const refresh = useCallback(async () => {
@@ -107,6 +113,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       setApiProducts([]);
       setApiCategories([]);
       setOrders([]);
+      setOrderDetails({});
       setReport(null);
       return;
     }
@@ -141,6 +148,48 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
           })),
       );
 
+      // Chi tiết đơn (tối đa 50) → số lượng bán thật + hiển thị đơn gần đây
+      const detailTargets = adminOrders.slice(0, 50);
+      const detailsList = await Promise.all(
+        detailTargets.map(async (order) => {
+          try {
+            const detail = await storeApi.getAdminOrder(order.id);
+            return [order.id, detail] as const;
+          } catch {
+            return null;
+          }
+        }),
+      );
+      const detailsMap: Record<string, OrderDetailDto> = {};
+      for (const row of detailsList) {
+        if (row) detailsMap[row[0]] = row[1];
+      }
+      setOrderDetails(detailsMap);
+
+      const qtyByName = new Map<string, number>();
+      for (const order of adminOrders) {
+        if (order.state === OrderState.Cancelled) continue;
+        const detail = detailsMap[order.id];
+        for (const line of detail?.items || []) {
+          const key = (line.productName || "").trim().toLowerCase();
+          if (!key) continue;
+          qtyByName.set(key, (qtyByName.get(key) || 0) + (line.quantity || 0));
+        }
+      }
+
+      const resolveSales = (fullName: string, baseName: string) => {
+        const full = fullName.trim().toLowerCase();
+        const base = baseName.trim().toLowerCase();
+        if (qtyByName.has(full)) return qtyByName.get(full)!;
+        if (qtyByName.has(base)) return qtyByName.get(base)!;
+        for (const [key, qty] of qtyByName) {
+          if (key.includes(base) || base.includes(key) || key.includes(full)) {
+            return qty;
+          }
+        }
+        return 0;
+      };
+
       setApiProducts(
         await Promise.all(
           products.map(async (p, index) => {
@@ -156,12 +205,14 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
                 priceLabel = formatVnd(Math.min(...prices));
               }
               stock = skus.reduce(
-                (sum, s) => sum + (Number.isFinite(s.available) ? s.available : 0),
+                (sum, s) =>
+                  sum + (Number.isFinite(s.available) ? s.available : 0),
                 0,
               );
             } catch {
-              // Giữ giá/tồn mặc định nếu không tải được SKU
+              // giữ mặc định
             }
+            const fullName = `${name} ${nameAccent}`.trim();
             return {
               id: p.id,
               name,
@@ -175,7 +226,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
               colors: ["#ffffff", "#1a1a1a"],
               sizes: [38, 39, 40, 41, 42],
               stock,
-              sales: 0,
+              sales: resolveSales(fullName, name),
               createdAt: new Date().toISOString().slice(0, 10),
               source: "custom" as const,
             };
@@ -188,6 +239,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       setFromApi(false);
       setApiCategories([]);
+      setOrderDetails({});
       setError(
         err instanceof Error
           ? `${err.message} — admin đang dùng dữ liệu local`
@@ -397,6 +449,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       products,
       categories,
       orders,
+      orderDetails,
       report,
       addProduct,
       addCategory,
@@ -410,6 +463,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       products,
       categories,
       orders,
+      orderDetails,
       report,
       addProduct,
       addCategory,

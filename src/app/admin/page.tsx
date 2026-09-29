@@ -2,20 +2,19 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useMemo } from "react";
 import {
   orderStateKey,
-  orderStatusCanonFromDemo,
   orderStatusCanonFromState,
-  orderStatusKeyFromCanon,
   orderStatusTone,
   useAdmin,
 } from "@/context/AdminContext";
 import { useLocale } from "@/context/LocaleContext";
-import { fakeOrders } from "@/lib/admin-store";
-import { parsePrice } from "@/data/shoes";
-import { formatVnd } from "@/lib/api";
+import { formatVnd, type OrderDetailDto } from "@/lib/api";
+import { OrderState } from "@/lib/api/types";
 import {
   displayOrderNumber,
+  displayProductName,
   formatAddressRecipient,
 } from "@/lib/format-display";
 
@@ -53,42 +52,120 @@ function GridLoadingFallback() {
   );
 }
 
+function orderCreatedLabel(detail: OrderDetailDto | undefined) {
+  const times = (detail?.history || [])
+    .map((h) => h.at)
+    .filter(Boolean)
+    .sort();
+  return times[0]?.slice(0, 10) || "—";
+}
+
+function orderProductsLabel(
+  detail: OrderDetailDto | undefined,
+  fallback: string,
+) {
+  const names = (detail?.items || [])
+    .map((line) =>
+      displayProductName(line.productName, line.skuCode),
+    )
+    .filter(Boolean);
+  if (!names.length) return fallback;
+  if (names.length === 1) return names[0]!;
+  return `${names[0]} +${names.length - 1}`;
+}
+
 export default function AdminDashboardPage() {
-  const { products, categories, hydrated, fromApi, error, report, orders } =
-    useAdmin();
+  const {
+    products,
+    categories,
+    hydrated,
+    fromApi,
+    error,
+    report,
+    orders,
+    orderDetails,
+  } = useAdmin();
   const { t } = useLocale();
 
-  const totalRevenue =
-    report?.deliveredSales ??
-    products.reduce(
-      (sum, p) =>
-        sum + parsePrice(p.price) * Math.max(1, Math.floor(p.sales / 50)),
-      0,
-    );
+  const totalRevenue = fromApi
+    ? report?.deliveredSales ?? 0
+    : 0;
   const activeStock = products.reduce((sum, p) => sum + p.stock, 0);
-  const bestSellers = [...products]
-    .sort((a, b) => b.sales - a.sales)
-    .slice(0, 3);
 
-  const stats = [
-    {
-      label: t("admin.statRevenue"),
-      value: formatVnd(totalRevenue),
-      delta: fromApi ? t("admin.statApiReport") : "+34.7%",
-    },
-    {
-      label: t("admin.statProducts"),
-      value: String(products.length),
-      delta: t("admin.statCatsDelta", { count: categories.length }),
-    },
-    {
-      label: fromApi ? t("admin.statOrdersPeriod") : t("admin.statStockUnits"),
-      value: fromApi ? String(report?.orders ?? orders.length) : String(activeStock),
-      delta: fromApi
-        ? t("admin.statCancelled", { count: report?.cancelled ?? 0 })
-        : "+12.4%",
-    },
-  ];
+  const bestSellers = useMemo(() => {
+    const ranked = [...products]
+      .filter((p) => (fromApi ? p.sales > 0 : true))
+      .sort((a, b) => b.sales - a.sales)
+      .slice(0, 3);
+    if (ranked.length) return ranked;
+    // Chưa có đơn bán: hiện 3 sản phẩm mới nhất theo list API (không bịa số bán)
+    return products.slice(0, 3).map((p) => ({ ...p, sales: p.sales || 0 }));
+  }, [products, fromApi]);
+
+  const recentOrders = useMemo(() => {
+    if (!fromApi) return [];
+    return orders.slice(0, 5).map((order) => {
+      const detail = orderDetails[order.id];
+      const statusCanon = orderStatusCanonFromState(order.state);
+      return {
+        id: displayOrderNumber(order.number, order.id),
+        product: orderProductsLabel(detail, t("admin.codOrder")),
+        date: orderCreatedLabel(detail),
+        payment: "COD",
+        customer: formatAddressRecipient(
+          order.addressSnapshot,
+          t("admin.customerFallback"),
+        ),
+        status: t(orderStateKey(order.state)),
+        statusCanon,
+        amountLabel: formatVnd(order.total),
+        cancelled: order.state === OrderState.Cancelled,
+      };
+    });
+  }, [fromApi, orders, orderDetails, t]);
+
+  const stats = fromApi
+    ? [
+        {
+          label: t("admin.statRevenue"),
+          value: formatVnd(totalRevenue),
+          hint: t("admin.statRevenueHint", {
+            cod: formatVnd(report?.codCollected ?? 0),
+            net: formatVnd(report?.netCollected ?? 0),
+          }),
+        },
+        {
+          label: t("admin.statProducts"),
+          value: String(products.length),
+          hint: t("admin.statCatsDelta", { count: categories.length }),
+        },
+        {
+          label: t("admin.statOrdersPeriod"),
+          value: String(report?.orders ?? orders.length),
+          hint: t("admin.statOrdersHint", {
+            cancelled: report?.cancelled ?? 0,
+            returns: report?.openReturns ?? 0,
+            lowStock: report?.lowStockSkus ?? 0,
+          }),
+        },
+      ]
+    : [
+        {
+          label: t("admin.statProducts"),
+          value: String(products.length),
+          hint: t("admin.statCatsDelta", { count: categories.length }),
+        },
+        {
+          label: t("admin.statStockUnits"),
+          value: String(activeStock),
+          hint: t("admin.dashOfflineHint"),
+        },
+        {
+          label: t("admin.statOrdersPeriod"),
+          value: "—",
+          hint: t("admin.dashOfflineHint"),
+        },
+      ];
 
   return (
     <div className="space-y-6">
@@ -130,12 +207,7 @@ export default function AdminDashboardPage() {
               </span>
             </div>
             <p className="text-3xl font-extrabold">{stat.value}</p>
-            <p className="mt-2 text-xs font-semibold text-[#ed3b6b]">
-              ↑ {stat.delta}{" "}
-              <span className="font-normal text-white/40">
-                {t("admin.vsLastPeriod")}
-              </span>
-            </p>
+            <p className="mt-2 text-xs text-white/45">{stat.hint}</p>
           </div>
         ))}
       </div>
@@ -173,6 +245,11 @@ export default function AdminDashboardPage() {
                 </p>
               </div>
             ))}
+            {hydrated && !bestSellers.length ? (
+              <p className="py-8 text-center text-sm text-white/45">
+                {t("home.empty")}
+              </p>
+            ) : null}
           </div>
           <Link
             href="/admin/products"
@@ -223,37 +300,7 @@ export default function AdminDashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {(fromApi && orders.length
-                ? orders.slice(0, 5).map((order) => {
-                    const statusCanon = orderStatusCanonFromState(order.state);
-                    return {
-                      id: displayOrderNumber(order.number, order.id),
-                      product:
-                        order.carrier ||
-                        order.trackingCode ||
-                        t("admin.codOrder"),
-                      date: order.reservationExpiresAt?.slice(0, 10) || "—",
-                      payment: "COD",
-                      customer: formatAddressRecipient(
-                        order.addressSnapshot,
-                        t("admin.customerFallback"),
-                      ),
-                      status: t(orderStateKey(order.state)),
-                      statusCanon,
-                      amount: order.total,
-                      amountLabel: formatVnd(order.total),
-                    };
-                  })
-                : fakeOrders.slice(0, 5).map((order) => {
-                    const statusCanon = orderStatusCanonFromDemo(order.status);
-                    return {
-                      ...order,
-                      status: t(orderStatusKeyFromCanon(statusCanon)),
-                      statusCanon,
-                      amountLabel: formatVnd(order.amount),
-                    };
-                  })
-              ).map((order) => (
+              {recentOrders.map((order) => (
                 <tr key={order.id} className="border-b border-white/5">
                   <td className="py-3 font-medium">{order.product}</td>
                   <td className="py-3 text-white/60">{order.id}</td>
@@ -271,6 +318,18 @@ export default function AdminDashboardPage() {
                   <td className="py-3 font-semibold">{order.amountLabel}</td>
                 </tr>
               ))}
+              {!recentOrders.length ? (
+                <tr>
+                  <td
+                    colSpan={7}
+                    className="py-8 text-center text-white/45"
+                  >
+                    {fromApi
+                      ? t("orders.empty")
+                      : t("admin.dashOfflineHint")}
+                  </td>
+                </tr>
+              ) : null}
             </tbody>
           </table>
         </div>
